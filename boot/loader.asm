@@ -21,9 +21,7 @@ org  0100h
 LABEL_GDT:			Descriptor             0,                    0, 0						; 空描述符
 LABEL_DESC_FLAT_C:		Descriptor             0,              0fffffh, DA_CR  | DA_32 | DA_LIMIT_4K			; 0 ~ 4G
 LABEL_DESC_FLAT_RW:		Descriptor             0,              0fffffh, DA_DRW | DA_32 | DA_LIMIT_4K			; 0 ~ 4G
-;LABEL_DESC_VIDEO:			Descriptor	 0B8000h,               0ffffh, DA_DRW                         | DA_DPL3	                                ; 显存首地址
-;LABEL_VGA_IMAGE2:		Descriptor 07E00H,                 1000h, DA_D
-LABEL_DESC_VGA:                                    Descriptor 0A0000h,               1ffffh, DA_DRW | DA_DPL3                                                          ;VGA首地址
+LABEL_DESC_VIDEO:		Descriptor	 0B8000h,               0ffffh, DA_DRW                         | DA_DPL3	; 显存首地址
 ; GDT ------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 GdtLen		equ	$ - LABEL_GDT
@@ -33,8 +31,7 @@ GdtPtr		dw	GdtLen - 1				; 段界限
 ; GDT 选择子 ----------------------------------------------------------------------------------
 SelectorFlatC		equ	LABEL_DESC_FLAT_C	- LABEL_GDT
 SelectorFlatRW		equ	LABEL_DESC_FLAT_RW	- LABEL_GDT
-;SelectorVideo		equ	LABEL_DESC_VIDEO	- LABEL_GDT + SA_RPL3
-SelectorVGA   		equ	LABEL_DESC_VGA - LABEL_GDT + SA_RPL3                          
+SelectorVideo		equ	LABEL_DESC_VIDEO	- LABEL_GDT + SA_RPL3
 ; GDT 选择子 ----------------------------------------------------------------------------------
 
 
@@ -51,67 +48,7 @@ LABEL_START:			; <--- 从这里开始 *************
 	mov	dh, 0			; "Loading  "
 	call	DispStrRealMode		; 显示字符串
 
-	push	ds
-	push 	es
-
-	mov 	al,02h
-	mov	 dx,03c4h
-	out 	dx,al
-	mov 	al,0010b
-	mov 	dx,03c5h
-	out 	dx,al 
-	;允许写位平面2 
-	mov 	al,04h
-	mov 	dx,03c4h
-	out 	dx,al
-	mov 	al,0111h
-	mov 	dx,03c5h
-	out 	dx,al
-	;禁止奇/偶编址方式 
-	mov 	al,05h
-	mov 	dx,03ceh
-	out 	dx,al
-	mov 	al,0h
-	mov 	dx,03cfh
-	out 	dx,al
-	;禁止奇/偶编址方式,选读写模式0 
-	mov 	al,06h
-	mov 	dx,03ceh
-	out 	dx,al
-	mov 	al,04h
-	mov 	dx,03cfh
-	out 	dx,al
-	;位平面映射到0A000H段 
-	mov 	al,04h
-	mov 	dx,03ceh
-	out 	dx,al
-	mov 	al,02h
-	mov 	dx,03cfh
-	out 	dx,al
-	;选择位平面2读 
-
-	mov 	ax,07E0h
-	mov 	ds,ax
-	mov	ax,0A000h
-	mov	es,ax
-	xor	bx,bx
-	mov	cx,08000h
-.Memcpy
-	mov	al,byte[es:bx]
-	mov	byte[ds:bx],al
-	inc	bx
-	cmp	cx,bx
-	jnz	.Memcpy	
-
-	pop	es	
-	pop	ds
-	;jmp $
-
-	mov 	ah,0
-	mov 	al,3h
-	int	10h
-
-	;得到内存数
+	; 得到内存数
 	mov	ebx, 0			; ebx = 后续值, 开始时需为 0
 	mov	di, _MemChkBuf		; es:di 指向一个地址范围描述符结构（Address Range Descriptor Structure）
 .MemChkLoop:
@@ -407,7 +344,7 @@ ALIGN	32
 [BITS	32]
 
 LABEL_PM_START:
-	mov	ax, SelectorVGA
+	mov	ax, SelectorVideo
 	mov	gs, ax
 	mov	ax, SelectorFlatRW
 	mov	ds, ax
@@ -417,7 +354,7 @@ LABEL_PM_START:
 	mov	esp, TopOfStack
 
 	push	szMemChkTitle
-	call	DispStr				;显示内存情况表的标题
+	call	DispStr
 	add	esp, 4
 
 	call	DispMemInfo

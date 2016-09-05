@@ -34,32 +34,35 @@ typedef struct s_proc {
 	t_16				ldt_sel;		/* selector in gdt giving ldt base and limit*/
 	DESCRIPTOR			ldts[LDT_SIZE];		/* local descriptors for code and data */
 								/* 2 is LDT_SIZE - avoid include protect.h */
+	int				ticks;			/* remained ticks */
+	int				priority;
 	t_32				pid;			/* process id passed in from MM */
-	char				p_name[16];		/* name of the process */
-	int					ticks;			/* remained ticks */
-	int					priority;
-	int					nr_tty;
-	t_bool				task_or_no;		//task OR not
+	char				name[16];		/* name of the process */
 
+	int				nr_tty;
 }PROCESS;
 
 
 typedef struct s_task {
-	t_pf_task		initial_eip;
-	char			name[32];
-	t_bool			task_or_no;
-	int				defaultTTY;
-	int				priority;
-
+	t_pf_task	initial_eip;
+	int		stacksize;
+	char		name[32];
 }TASK;
 
 
 /* Number of tasks & processes */
-#define NR_TASKS_PROCS		2
-#define	MAX_TASKS_PROCS     7//暂时支持这么多。。。
+#define NR_TASKS		1
+#define NR_PROCS		1//3
 
 
 /* stacks of tasks */
-#define STACK_SIZE_COMMON	0x8000
+#define STACK_SIZE_TTY		0x8000
+#define STACK_SIZE_TESTA	0x8000
+#define STACK_SIZE_TESTB	0x8000
+#define STACK_SIZE_TESTC	0x8000
 
-#define STACK_SIZE_TOTAL	( MAX_TASKS_PROCS * STACK_SIZE_COMMON )
+#define STACK_SIZE_TOTAL	(STACK_SIZE_TTY + \
+				STACK_SIZE_TESTA /* + \
+				STACK_SIZE_TESTB + \
+				STACK_SIZE_TESTC*/)
+

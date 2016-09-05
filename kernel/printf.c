@@ -7,7 +7,6 @@
 
 #include "type.h"
 #include "const.h"
-#include "string.h"
 
 /******************************************************************************************
                         可变参数函数调用原理（其中涉及的数字皆为举例）
@@ -60,55 +59,5 @@ int printf(const char *fmt, ...)
 	write(buf, i);
 
 	return i;
-}
-
-
-/*======================================================================*
-                                 vsprintf
- *======================================================================*/
-int vsprintf(char * buf, const char * fmt, va_list args)
-{
-	char * p;
-	char tmp[256];
-	va_list p_next_arg = args;
-	for ( p = buf ; *fmt ; fmt++ )
-	{
-		if ( *fmt != '%' )
-		{
-			*p++ = *fmt;
-			continue;
-		}
-		
-		fmt++;
-		
-		switch (*fmt)
-		{
-		case 's':
-			{
-				strcpy(p, *(char **)(p_next_arg));
-				int iStrLen = strlen(*(char **)(p_next_arg));
-				p[iStrLen]=0;
-				p += iStrLen;
-				p_next_arg += 4;
-				break;
-			}
-		case 'c':
-			*p++ = *p_next_arg;
-			p_next_arg += 4;
-			break;
-		case 'd':
-			{
-				_itoa(tmp, *((int *)p_next_arg));		
-				int iStrLen = strlen(tmp);
-				strcpy(p, tmp);
-				p += iStrLen;
-				p_next_arg += 4;
-			}
-			break;
-		default:
-			break;
-		}
-	}
-	return (p - buf);
 }
 

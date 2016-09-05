@@ -12,7 +12,6 @@ global	memcpy
 global	memset
 global	strcpy
 global	strlen
-global	strchr
 
 
 ; ------------------------------------------------------------------------
@@ -101,10 +100,10 @@ strcpy:
 
 .1:
 	mov	al, [esi]		; ┓
-	inc	esi			; ┃
-					; ┣ 逐字节移动
-	mov	byte [edi], al		; ┃
-	inc	edi			; ┛
+	inc	esi				; ┃
+						; ┣ 逐字节移动
+	mov	byte [edi], al	; ┃
+	inc	edi				; ┛
 
 	cmp	al, 0		; 是否遇到 '\0'
 	jnz	.1		; 没遇到就继续循环，遇到就结束
@@ -115,35 +114,6 @@ strcpy:
 	ret			; 函数结束，返回
 ; strcpy 结束-------------------------------------------------------------
 
-; ------------------------------------------------------------------------
-; char* strchr(char* pStr, char ch);
-; ------------------------------------------------------------------------
-strchr:
-	push	ebp
-	mov	ebp, esp
-
-	mov	esi, [ebp + 12]	; ch
-	mov	edi, [ebp + 8]	; String
-
-.1:
-	movsx	eax, byte [edi]	; 返回值
-	inc	edi
-
-	cmp	eax, esi	; 是否相等
-	jnz	.1		; 不相等就继续循环，遇到就结束
-	dec	edi
-	jmp	.2
-
-	cmp	eax, 0		; 是否遇到 '\0'
-	jnz	.1		; 没遇到就继续循环，遇到就结束
-	xor	edi, edi
-
-	.2:
-	mov	eax, edi	; 返回值
-
-	pop	ebp
-	ret			; 函数结束，返回
-; strstr 结束-------------------------------------------------------------
 
 ; ------------------------------------------------------------------------
 ; int strlen(char* p_str);

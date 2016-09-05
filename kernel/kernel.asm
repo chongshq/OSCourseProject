@@ -10,12 +10,11 @@
 
 ; 导入函数
 extern	cstart
-extern	yinix_main
+extern	tinix_main
 extern	exception_handler
 extern	spurious_irq
 extern	clock_handler
 extern	disp_str
-extern	disp_str_yy
 extern	delay
 
 ; 导入全局变量
@@ -143,7 +142,7 @@ csinit:		; “这个跳转指令强制使用刚刚初始化的结构”——<<OS:D&I 2nd>> P90.
 	mov	ax, SELECTOR_TSS
 	ltr	ax
 
-	jmp	yinix_main
+	jmp	tinix_main
 
 	;hlt
 
@@ -155,12 +154,12 @@ csinit:		; “这个跳转指令强制使用刚刚初始化的结构”——<<OS:D&I 2nd>> P90.
 	in	al, INT_M_CTLMASK	; ┓
 	or	al, (1 << %1)		; ┣ 屏蔽当前中断
 	out	INT_M_CTLMASK, al	; ┛
-	mov	al, EOI			; ┓置EOI位
+	mov	al, EOI				; ┓置EOI位
 	out	INT_M_CTL, al		; ┛
 	sti	; CPU在响应中断的过程中会自动关中断，这句之后就允许响应新的中断
-	push	%1			; ┓
+	push	%1						; ┓
 	call	[irq_table + 4 * %1]	; ┣ 中断处理程序
-	pop	ecx			; ┛
+	pop	ecx							; ┛
 	cli
 	in	al, INT_M_CTLMASK	; ┓
 	and	al, ~(1 << %1)		; ┣ 恢复接受当前中断
@@ -205,21 +204,19 @@ hwint07:		; Interrupt routine for irq 7 (printer)
 ; ---------------------------------
 %macro	hwint_slave	1
 	call	save
-	in	al, INT_S_CTLMASK			; `.
-	or	al, (1 << (%1 - 8))				;  | 屏蔽当前中断
-	out	INT_S_CTLMASK, al		; /
-	mov	al, EOI							; `. 置EOI位(master)
-	out	INT_M_CTL, al				; /
-	nop										; `. 置EOI位(slave)
-	out	INT_S_CTL, al				; /  一定注意：slave和master都要置EOI
+	in	al, INT_S_CTLMASK	; ┓
+	or	al, (1 << (%1 - 8))	; ┣ 屏蔽当前中断
+	out	INT_S_CTLMASK, al	; ┛
+	mov	al, EOI				; ┓置EOI位
+	out	INT_S_CTL, al		; ┛
 	sti	; CPU在响应中断的过程中会自动关中断，这句之后就允许响应新的中断
-	push	%1								; `.
-	call	[irq_table + 4 * %1]		;  | 中断处理程序
-	pop	ecx								; /
+	push	%1						; ┓
+	call	[irq_table + 4 * %1]	; ┣ 中断处理程序
+	pop	ecx							; ┛
 	cli
-	in	al, INT_S_CTLMASK			; `.
-	and	al, ~(1 << (%1 - 8))		;  | 恢复接受当前中断
-	out	INT_S_CTLMASK, al		; /
+	in	al, INT_S_CTLMASK		; ┓
+	and	al, ~(1 << (%1 - 8))	; ┣ 恢复接受当前中断
+	out	INT_S_CTLMASK, al		; ┛
 	ret
 %endmacro
 ; ---------------------------------
@@ -335,19 +332,43 @@ save:
 	mov	dx, ss
 	mov	ds, dx
 	mov	es, dx
+	mov	fs, dx
 
-	mov	esi, esp			; esi = 进程表起始地址
+	mov	esi, esp						; esi = 进程表起始地址
 
-	inc	dword [k_reenter]		; k_reenter++;
-	cmp	dword [k_reenter], 0		; if(k_reenter ==0)
-	jne	.1				; {
-	mov	esp, StackTop			;	mov esp, StackTop <-- 切换到内核栈
-	push	restart				;	push restart
+	inc	dword [k_reenter]				; k_reenter++;
+	cmp	dword [k_reenter], 0			; if(k_reenter ==0)
+	jne	.1								; {
+	mov	esp, StackTop					;	mov esp, StackTop <-- 切换到内核栈
+	push	restart						;	push restart
 	jmp	[esi + RETADR - P_STACKBASE]	;	return;
-.1:						; } else { 已经在内核栈，不需要再切换
-	push	restart_reenter			;	push restart_reenter
+.1:										; } else { 已经在内核栈，不需要再切换
+	push	restart_reenter				;	push restart_reenter
 	jmp	[esi + RETADR - P_STACKBASE]	;	return;
-						; }
+										; }
+
+
+; ====================================================================================
+;                                 sys_call
+; ====================================================================================
+sys_call:
+	call	save
+
+	push	dword [p_proc_ready]
+
+	sti
+
+	push	ecx
+	push	ebx
+	call	[sys_call_table + eax * 4]
+	add	esp, 4 * 3
+
+	mov	[esi + EAXREG - P_STACKBASE], eax
+
+	cli
+
+	ret
+
 
 ; ====================================================================================
 ;                                   restart
@@ -358,33 +379,13 @@ restart:
 	lea	eax, [esp + P_STACKTOP]
 	mov	dword [tss + TSS3_S_SP0], eax
 restart_reenter:
-	dec dword [k_reenter]
+	dec	dword [k_reenter]
 	pop	gs
 	pop	fs
 	pop	es
 	pop	ds
 	popad
 	add	esp, 4
-	iretd	;中断返回指令
+	iretd
 
-
-; ====================================================================================
-;                                 sys_call
-; ====================================================================================
-
-sys_call:
-	call save
-	push ecx
-	push ebx
-
-	push dword [p_proc_ready]
-	sti
-	call [sys_call_table + eax * 4]
-	
-	add esp, 4 * 3
-
-	mov [esi + EAXREG - P_STACKBASE], eax
-
-	cli
-	ret
 

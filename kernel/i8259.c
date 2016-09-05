@@ -13,9 +13,10 @@
 #include "proc.h"
 #include "tty.h"
 #include "console.h"
+#include "file.h"
 #include "global.h"
 #include "proto.h"
-#include "keyboard.h"
+
 
 /*======================================================================*
                             init_8259A
@@ -31,8 +32,8 @@ PUBLIC void init_8259A()
 	out_byte(INT_M_CTLMASK,	0x1);			// Master 8259, ICW4.
 	out_byte(INT_S_CTLMASK,	0x1);			// Slave  8259, ICW4.
 
-	out_byte(INT_M_CTLMASK,	0b11111001);	// Master 8259, OCW1. 
-	out_byte(INT_S_CTLMASK,	0x11101111);	// Slave  8259, OCW1. 
+	out_byte(INT_M_CTLMASK,	0xFF);	// Master 8259, OCW1. 
+	out_byte(INT_S_CTLMASK,	0xFF);	// Slave  8259, OCW1. 
 
 	int i;
 	for(i=0;i<NR_IRQ;i++){
@@ -54,5 +55,7 @@ PUBLIC void put_irq_handler(int irq, t_pf_irq_handler handler)
  *======================================================================*/
 PUBLIC void spurious_irq(int irq)
 {
-	
+	disp_str("spurious_irq: ");
+	disp_int(irq);
+	disp_str("\n");
 }

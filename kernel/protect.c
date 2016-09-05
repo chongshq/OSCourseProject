@@ -11,10 +11,9 @@
 #include "proc.h"
 #include "tty.h"
 #include "console.h"
+#include "file.h"
 #include "global.h"
 #include "proto.h"
-#include "string.h"
-#include "keyboard.h"
 
 
 /* 本文件内函数声明 */
@@ -114,12 +113,11 @@ PUBLIC void init_prot()
 	int i;
 	PROCESS* p_proc	= proc_table;
 	t_16 selector_ldt = INDEX_LDT_FIRST << 3;
-	for(i=0;i<MAX_TASKS_PROCS;i++){
+	for(i=0;i<NR_TASKS+NR_PROCS;i++){
 		init_descriptor(&gdt[selector_ldt>>3],
 				vir2phys(seg2phys(SELECTOR_KERNEL_DS), proc_table[i].ldts),
 				LDT_SIZE * sizeof(DESCRIPTOR) - 1,
 				DA_LDT);
-		proc_table[i].priority = 0;
 		p_proc++;
 		selector_ldt += 1 << 3;
 	}

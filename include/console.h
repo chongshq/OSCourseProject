@@ -19,14 +19,12 @@ typedef struct s_console
 	unsigned int	cursor;			/* 当前光标位置 */
 }CONSOLE;
 
+
 #define SCROLL_SCREEN_UP	1	/* scroll forward */
 #define SCROLL_SCREEN_DOWN	-1	/* scroll backward */
 
 #define SCREEN_SIZE		(80 * 25)
 #define SCREEN_WIDTH		80
-
-#define HSCREEN_SIZE		(640 * 480)
-#define HSCREEN_WIDTH	640
 
 #define DEFAULT_CHAR_COLOR	0x07	/* 0000 0111 黑底白字 */
 

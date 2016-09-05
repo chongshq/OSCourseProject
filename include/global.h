@@ -27,31 +27,18 @@ EXTERN	PROCESS*	p_proc_ready;
 EXTERN	int		nr_current_console;
 
 extern	PROCESS		proc_table[];
-extern	int			task_proc_table[];
 extern	char		task_stack[];
-extern	TASK		task_whole_list[];
-//extern	TASK		task_table[];
-extern	t_pf_irq_handler	irq_table[];
-//extern	TASK		user_proc_table[];
+extern	TASK		task_table[];
+extern	TASK		user_proc_table[];
 extern	TTY		tty_table[];
 extern	CONSOLE		console_table[];
-extern	unsigned int _portlist[];
-extern	char _indexlist[];
-extern	t_8 _VGAMemCopy[];
-extern	int map[9][9];
-EXTERN	t_8 _VGAMode;
-EXTERN	unsigned int _TextCursorPos;
-EXTERN	int _MouseX;
-EXTERN	int _MouseY;
-EXTERN	t_8 _MouseEnable;
 
-extern	int Area[20][20];
-extern	int Mask[20][20];
-EXTERN int State;
-
-/*
 extern	t_pf_irq_handler	irq_table[];
 
 extern	t_sys_call		sys_call_table[];
-*/
 
+extern	F_FILE	f_sys_opentbl[];
+extern	F_SYS	f_sys;
+extern	F_DIR	f_dir;
+extern	F_EPTBL	f_eptbl;
+extern 	t_fd	gfd;

@@ -52,7 +52,7 @@
 #define	RPL_USER	SA_RPL3
 
 /* TTY */
-#define	NR_CONSOLES	4	/* consoles */
+#define	NR_CONSOLES	1	//3	/* consoles */
 
 /* 8259A interrupt controller ports. */
 #define	INT_M_CTL	0x20	/* I/O port for interrupt controller         <Master> */
@@ -86,14 +86,7 @@
 #define CRTC_DATA_IDX_CURSOR_H		0xE	/* register index of cursor position (MSB) */
 #define CRTC_DATA_IDX_CURSOR_L		0xF	/* register index of cursor position (LSB) */
 #define V_MEM_BASE			0xB8000	/* base of color video memory */
-#define V_MEM_SIZE			0x8000	/* 32K: B8000H -> BFFFFH *///C
-#define V_MEM_FONT			0xA000
-
-/*HIGH VGA*/
-#define FONT_MEM_BASE	0x7E00
-#define FONT_MEM_SIZE		0x2000
-#define HV_MEM_BASE		0xA0000
-#define HV_MEM_SIZE			0x20000
+#define V_MEM_SIZE			0x8000	/* 32K: B8000H -> BFFFFH */
 
 
 /* Hardware interrupts */
@@ -107,42 +100,11 @@
 #define	XT_WINI_IRQ	5	/* xt winchester */
 #define	FLOPPY_IRQ	6	/* floppy disk */
 #define	PRINTER_IRQ	7
-#define MOUSE_IRQ	12
 #define	AT_WINI_IRQ	14	/* at winchester */
 
 
 /* system call */
-#define	NR_SYS_CALL	11
+#define	NR_SYS_CALL	2
 
-/*vga register*/
-#define GR_MOR_R 0x3CC
-#define GR_MOR_W 0x3C2
-#define GR_ISR0_R 0x3C2
-#define GR_ISR1_R 0x3DA
-#define GR_FCR_R 0x3CA
-#define GR_FCR_W 0x3DA
-#define GR_VSER 0x3C3
-#define SR_ADDR 0x3C4
-#define SR_DATAR 0x3C5
-#define CRT_ADDR 0x3D4
-#define CRT_DATAR 0x3D5
-#define GCR_ADDR 0x3CE
-#define GCR_DATAR 0x3CF
-#define ACR_ADDR 0x3C0
-#define ACR_DATAR_R 0x3C1
-#define ACR_DATAR_W 0x3C0
-#define DAC_WA 0x3C8
-#define DAC_RA 0x3C7
-#define DAC_STATE 0x3C7
-#define DAC_DATA 0x3C9
-#define DAC_PM 0x3C6
-
-// #define GR_INDEX_NUM 5
-// #define SR_INDEX_NUM 5
-// #define CRT_INDEX_NUM 25
-// #define GCR_INDEX_NUM 9
-// #define ACR_INDEX_NUM 5
-
-#define VGA_CHAR_BUFF_INDEX_SUM 61
 
 #endif /* _TINIX_CONST_H_ */

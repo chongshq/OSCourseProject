@@ -12,16 +12,17 @@
 #include "proc.h"
 #include "tty.h"
 #include "console.h"
+#include "file.h"
 #include "global.h"
 #include "proto.h"
-#include "keyboard.h"
+
 
 /*======================================================================*
                             cstart
  *======================================================================*/
 PUBLIC void cstart()
 {
-	disp_str("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n-----\"cstart\" begins-----\n");
+	disp_str("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n-----\"cstart\" begins-----\n");
 
 	// 将 LOADER 中的 GDT 复制到新的 GDT 中
 	memcpy(	&gdt,				    // New GDT
@@ -41,6 +42,6 @@ PUBLIC void cstart()
 	*p_idt_base  = (t_32)&idt;
 
 	init_prot();
-
+	InitFileSys();
 	disp_str("-----\"cstart\" finished-----\n");
 }

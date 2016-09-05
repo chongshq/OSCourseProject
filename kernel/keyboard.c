@@ -12,6 +12,7 @@
 #include "proc.h"
 #include "tty.h"
 #include "console.h"
+#include "file.h"
 #include "global.h"
 #include "keyboard.h"
 #include "keymap.h"
@@ -35,8 +36,6 @@ PRIVATE t_8	get_byte_from_kb_buf();
 PRIVATE void	set_leds();
 PRIVATE void	kb_wait();
 PRIVATE void	kb_ack();
-PRIVATE t_8 SetMouse(t_8 byteparam);
-PRIVATE void Dispbin(t_8* startaddr, t_8 byteparam);
 
 /*======================================================================*
                             keyboard_handler
@@ -61,13 +60,11 @@ PUBLIC void keyboard_handler(int irq)
  *======================================================================*/
 PUBLIC void init_keyboard()
 {
-	_MouseEnable = 0;
-
 	kb_in.count = 0;
 	kb_in.p_head = kb_in.p_tail = kb_in.buf;
 
 	caps_lock	= 0;
-	num_lock	= 0;
+	num_lock	= 1;
 	scroll_lock	= 0;
 
 	set_leds();
@@ -76,153 +73,7 @@ PUBLIC void init_keyboard()
 	enable_irq(KEYBOARD_IRQ);				/* ¿ª¼üÅÌÖÐ¶Ï */
 }
 
-PUBLIC void init_mouse()
-{
-	_MouseEnable = 0;
-	_MouseX = 320;
-	_MouseY = 240;
 
-	put_irq_handler(MOUSE_IRQ, mouse_handler);
-	enable_irq(MOUSE_IRQ);
-	kb_wait();
-
-	out_byte(0x64, 0xA8);
-	t_8 re = in_byte(0x60);
-	Dispbin((t_8*)0xB8000, re);
-
-	re = SetMouse(0xFF);
-	Dispbin((t_8*)(0xB8000), re);
-	re = SetMouse(0xF4);
-	Dispbin((t_8*)(0xB801E), re);
-
-	out_byte(0x64,0x60);
-	out_byte(0x60,0x47);
-
-	kb_ack();
-
-}
-
-t_8 SetMouse(t_8 byteparam)
-{
-	out_byte(0x64, 0xD4);
-	out_byte(0x60, byteparam);
-	return in_byte(0x60);
-}
-
-void Dispbin(t_8* startaddr, t_8 byteparam)
-{
- 	t_8 i = 0b10000000;
- 	t_8* testm = startaddr;
- 	for (;testm < startaddr + 0xf;)
- 	{
- 		if ((byteparam & i) != 0)
- 		{
- 			*testm++='1';
- 			*testm++=DEFAULT_CHAR_COLOR;
- 		}else
- 		{
- 			*testm++='0';
- 			*testm++=DEFAULT_CHAR_COLOR;
- 		}
- 		i>>=1;
- 	}
-}
-PUBLIC void mouse_handler(int irq)
-{
-	t_8 data = in_byte(0x60);
-	static int count = 0;
-	static int xs = 0;
-	static int ys = 0;
-	static t_8 ld = 0;
-	static t_8 rd = 0;
-	switch (_VGAMode)
-	{
-	case 0x12:
-		switch (++count)
-		{
-		case 1:
-			ld = data & 0x1;
-			rd = data & 0x2;
-			xs = data & 0x10 ? 0xFFFFFF00 : 0;
-			ys = data & 0x20 ? 0xFFFFFF00 : 0;
-			break;
-		case 2:
-			_MouseX += (xs | data);
-			if (_MouseX >= 640) _MouseX = 640;
-			if (_MouseX < 0) _MouseX = 0;
-			break;
-		case 3:
-			_MouseY -= (ys | data);
-			if (_MouseY > 480) _MouseY = 480;
-			if (_MouseY < 0) _MouseY = 0;
-			DrawCursor(1);
-			if (ld)
-			{
-				DrawCursor(0);
-				Redraw(_MouseX, _MouseY, 1);
-			}
-			else if (rd)
-			{
-				DrawCursor(0);
-				Redraw(_MouseX, _MouseY, 2);
-			}
-			count = 0;
-			break;
-		}
-		break;
-	}
-}
-
-PUBLIC void DrawCursor(int clearf)
-{
-	static t_8 flag = 0;
-	static int oldx;
-	static int oldy;
-	out_byte(0x3CE, 3);
-	out_byte(0x3CF, 0b00011000);
-	int i;
-	int j;
-	t_8 color;
-	for (j=0;j<12;j++)
-	{
-		for (i=0;i<12;i++)
-		{
-			color = ((i == j) || !i) ? 0x0F : 0x0F;
-			if (_MouseEnable)
-				WritePix(0x12, oldx+i, oldy+j, color);
-			if (clearf)
-				WritePix(0x12, _MouseX+i, _MouseY+j, color);
-			if (i == j) break;
-		}
-	}
-	for (i=0;i<13;i++)
-	{
-		j = 12;
-		color = ((i > 4) || (i==0)) ? 0x0F : 0x0F;
-		if (_MouseEnable)
-			WritePix(0x12, oldx+i, oldy+j, color);
-		if (clearf)
-			WritePix(0x12, _MouseX+i, _MouseY+j, color);
-	}
-	for (j=13;j<18;j++)
-	{
-		for (i=0;i<6;i++)
-		{
-			color = (((i + j) == 17) || !i) ? 0x0F : 0x0F;
-			if (_MouseEnable)
-				WritePix(0x12, oldx+i, oldy+j, color);
-			if (clearf)
-				WritePix(0x12, _MouseX+i, _MouseY+j, color);
-			if ((i + j) == 17) break;
-		}
-	}
-	if (!_MouseEnable) _MouseEnable = 1;
-	if (!clearf) _MouseEnable = 0;
-	oldx = _MouseX;
-	oldy = _MouseY;
-	out_byte(0x3CE, 3);
-	out_byte(0x3CF, 0);
-}
 /*======================================================================*
                            keyboard_read
  *======================================================================*/

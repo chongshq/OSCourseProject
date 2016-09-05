@@ -19,25 +19,54 @@ global	disp_str
 global	disp_color_str
 global	out_byte
 global	in_byte
-global 	disp_mode
 global	enable_irq
 global	disable_irq
 global	enable_int
 global	disable_int
-global	asm_writepix
+global  memcmp
 
-;========================================================================
-;	void disp_mode(char mode)
-;========================================================================
+; ------------------------------------------------------------------------
+; int memcmp(void* es:a, void* ds:b, int size);
+; ret > 0 : a > b
+; ret = 0 : a = b
+; ret < 0 : a < b
+; ------------------------------------------------------------------------
+memcmp:
+	push	ebp
+	mov		ebp, esp
 
-disp_mode:
-	push	eax
-;	push	ebx
-	mov 	ah,0fh
-	int	10h
-;	pop 	ebx
-	pop	eax
-	ret
+	push	esi
+	push	edi
+	push	ecx
+
+	mov	edi, [ebp + 8]	; a
+	mov	esi, [ebp + 12]	; b
+	mov	ecx, [ebp + 16]	; Counter
+	mov eax, 0
+.1:
+	cmp	ecx, 0		; 判断计数器
+	jz	.2			; 计数器为零时跳出
+
+	mov	al, [es:esi]
+	sbb al, [ds:edi]
+	cmp eax,0
+	jnz .2
+	
+	inc	esi					
+	inc edi
+	dec ecx
+	jmp .1	
+						
+.2:
+	pop	ecx
+	pop	edi
+	pop	esi
+	mov	esp, ebp
+	pop	ebp
+
+	ret			; 函数结束，返回
+; memcmp 结束-------------------------------------------------------------
+
 
 ; ========================================================================
 ;                  void disp_str(char * info);
@@ -69,11 +98,6 @@ disp_str:
 .3:
 	mov	[gs:edi], ax
 	add	edi, 2
-
-	cmp	edi, 80 * 25 * 2
-	jb	.1
-	
-	xor	edi, edi
 	jmp	.1
 
 .2:
@@ -226,61 +250,5 @@ disable_int:
 ; ========================================================================
 enable_int:
 	sti
-	ret
-
-; ========================================================================
-;                  void asm_writepix(int x, int y, int color);
-; ========================================================================
-asm_writepix:
-	mov bx,[esp+4]
-	mov cx,[esp+8]
-	mov dx,[esp+12]
-	pushf
-;=============
-	push dx;color压栈
-	push bx;x压栈
-	
-	xor eax,eax
-	shr bx,3
-	mov ax,50h
-	mul cx
-	add ax,bx
-	mov edi,eax
-	pop cx
-	and cl,7
-	mov ax,80h
-	shr al,cl
-	xor cx,cx
-	mov cl,al
-	;bx=80*y+x>>3
-	
-	mov dx, 03c4h
-	mov al,2
-	out dx,al
-	inc dx
-	mov al,0fh
-	out dx,al
-	;位面全开
-		
-	mov dx,03eh
-	mov al,05h
-	out dx,al
-	inc dx
-	mov al,02h
-	out dx,al
-	;写模式2
-	
-	mov dx,3ceh
-	mov al,08h
-	out dx,al
-	mov al,cl
-	inc dx
-	out dx,al
-	
-	mov ah,[gs:edi]
-	pop ax
-	mov [gs:edi],al
-;=============
-	popf
 	ret
 

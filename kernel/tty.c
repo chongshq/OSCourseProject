@@ -12,6 +12,7 @@
 #include "proc.h"
 #include "tty.h"
 #include "console.h"
+#include "file.h"
 #include "global.h"
 #include "keyboard.h"
 #include "proto.h"
@@ -19,19 +20,121 @@
 
 #define TTY_FIRST	(tty_table)
 #define TTY_END		(tty_table + NR_CONSOLES)
+#define CMDLINE_BUF_SIZE 256
 
 
 /* 本文件内函数声明 */
 PRIVATE void	init_tty(TTY* p_tty);
 PRIVATE void	tty_do_read(TTY* p_tty);
 PRIVATE void	tty_do_write(TTY* p_tty);
-PRIVATE void	tty_in_graphics();
-PRIVATE void	in_graphics_process(t_32 key);
 PRIVATE void	put_key(TTY* p_tty, t_32 key);
+PRIVATE void  	cmd_process(TTY* p_tty);
+PRIVATE int		get_arg(char * start, void * buf);
 
-PRIVATE char tty_outbuf_getchar(TTY * p_tty);
-PRIVATE void tty_tempbuf_putchar(TTY * p_tty, char ch);
-PRIVATE void tty_tempbuf_to_outbuf(TTY * p_tty);
+PRIVATE char	cmdlinebuf[CMDLINE_BUF_SIZE];
+PRIVATE int		cmdlinecount = 0;
+//PRIVATE char 	cmd_create[] = "create";
+#define cmd_create	"create"
+#define cmd_open 	"open"
+#define cmd_read	"read"
+#define cmd_remove	"remove"
+#define cmd_rename	"rename"
+#define cmd_list	"list"
+#define cmd_write	"write"
+#define cmd_close	"close"
+#define cmd_help	"help"
+
+/*======================================================================*
+                            get_arg
+ *======================================================================*/
+PRIVATE int get_arg(char * start, void * buf)
+{
+	int i = 0;
+	while ((*(start+i) != '\0') && (*(start+i) != ' ') && i < CMDLINE_BUF_SIZE)
+		i++;
+		
+	if (i == CMDLINE_BUF_SIZE) {
+		((char*)buf)[0] = '\0';
+		return 0;
+	}
+	
+	memcpy((char*)buf,start,i);
+	*((char*)buf+i) = '\0';
+	return i;
+}
+
+
+/*======================================================================*
+                         cmd_process
+ *======================================================================*/
+PRIVATE void cmd_process(TTY* p_tty)
+{
+	int  pointer = 0;
+	
+	char cmd[CMDLINE_BUF_SIZE];
+	char arg1[CMDLINE_BUF_SIZE];
+	char arg2[CMDLINE_BUF_SIZE];
+	
+	pointer += get_arg(cmdlinebuf,cmd);
+	pointer++;
+	pointer += get_arg(cmdlinebuf+pointer,arg1);
+	pointer++;
+	pointer += get_arg(cmdlinebuf+pointer,arg2);
+
+	printf("\n");
+	
+	if (strcmp(cmd,cmd_create,6) == 0)	{
+		// CREATE
+		gfd = sys_fcreate(arg1, 2);
+	} else if (strcmp(cmd,cmd_open,4) == 0) {
+		// OPEN
+		gfd = sys_fopen(arg1);
+	} else if (strcmp(cmd,cmd_close,5) == 0) {
+		// CLOSE
+		sys_fclose(gfd);
+	} else if (strcmp(cmd,cmd_remove,6) == 0) {
+		// DELETE
+		sys_fdelete(arg1);
+	} else if (strcmp(cmd,cmd_rename,6) == 0) {
+		// RENAME
+		sys_frename(arg1, arg2);
+	} else if (strcmp(cmd,cmd_list,4) == 0) {
+		// LIST
+		sys_flist();
+	} else if (strcmp(cmd,cmd_write,5) == 0) {
+		// WIRTE
+		sys_fwrite(gfd, cmdlinebuf + 6, strlen(cmdlinebuf) - 6);
+	} else if (strcmp(cmd,cmd_read,4) == 0){
+		// READ
+		char buf[5];
+		sys_fskbegin(gfd);
+		while(sys_fread(gfd, buf, 5))
+		{
+			printf(buf);
+		}
+		printf("\n");
+	} else if (strcmp(cmd,cmd_help,4) == 0){
+		printf("-----------HELP----------\n");
+		printf("list             : to list all files.\n");
+		printf("create filename  : to create a new file.\n");
+		printf("remove filename  : to remove a file.\n");
+		printf("open filename    : to open a file.\n");
+		printf("close            : to close the opened file.\n");
+		printf("read             : to show the content of the file.\n");
+		printf("write content    : to write content into the file.\n");
+		printf("help             : to show help.\n");
+		printf("-----------END----------\n");
+	} else {
+	
+	}
+	//printf("#> ");
+	memset(cmdlinebuf,'\0',CMDLINE_BUF_SIZE);
+	cmdlinecount = 0;
+}
+
+
+
+
 /*======================================================================*
                            task_tty
  *======================================================================*/
@@ -40,26 +143,18 @@ PUBLIC void task_tty()
 	TTY*	p_tty;
 
 	init_keyboard();
-	init_mouse();
 
 	for (p_tty=TTY_FIRST;p_tty<TTY_END;p_tty++) {
 		init_tty(p_tty);
 	}
+
 	select_console(0);
-	_VGAMode = 0x3;
 
 	while (1) {
-		if (_VGAMode < 0x4)
-		{
-			for (p_tty=TTY_FIRST;p_tty<TTY_END;p_tty++) {
-				tty_do_read(p_tty);
-				tty_do_write(p_tty);
-			}
-		}else{
-			tty_in_graphics();
-			//12h
+		for (p_tty=TTY_FIRST;p_tty<TTY_END;p_tty++) {
+			tty_do_read(p_tty);
+			tty_do_write(p_tty);
 		}
-
 	}
 }
 
@@ -72,82 +167,36 @@ PRIVATE void init_tty(TTY* p_tty)
 	p_tty->inbuf_count = 0;
 	p_tty->p_inbuf_head = p_tty->p_inbuf_tail = p_tty->in_buf;
 
-	p_tty->outbuf_count = 0;
-	p_tty->p_outbuf_head = p_tty->p_outbuf_tail = p_tty->out_buf;
-	p_tty->tempLen = 0;
-	p_tty->fEcho = FALSE;
-	p_tty->fAccept = FALSE;
-
 	init_screen(p_tty);
+	
+	memset(cmdlinebuf,'\0',CMDLINE_BUF_SIZE);
 }
-//
-void	tty_in_graphics()
-{
-	keyboard_read(0);
-}
-//
-void in_graphics_process(t_32 key)
-{
-	if (!(key & FLAG_EXT))
-	{
-		switch (key & 0xFF)
-		{
-		case 0x01:
-			break;
-		}
-	}else{
-		switch (key & 0x01FF)
-		{
-		case 0x0101:
-			SetVGAMode(0x03);
-			_MouseEnable = 0;
-			break;
-		}
-	}
-}
+
+
 /*======================================================================*
                            in_process
  *======================================================================*/
 PUBLIC void in_process(TTY* p_tty, t_32 key)
 {
-	if (p_tty == 0)
-	{
-		in_graphics_process(key);
-		return;
-	}
-	char output[2] = {0 , 0};
-
-	if (!(key & FLAG_EXT))
-	{
+	if (!(key & FLAG_EXT)) {
 		put_key(p_tty, key);
-		tty_tempbuf_putchar(p_tty, key & 0xFF);
 	}
-	else
-	{
+	else {
 		int raw_code = key & MASK_RAW;
-		switch (raw_code)
-		{
+		switch(raw_code) {
 		case ENTER:
-			put_key(p_tty, 0x0A);
-			tty_tempbuf_putchar(p_tty, 0x0A);
-			tty_tempbuf_to_outbuf(p_tty);
+			put_key(p_tty, '\n');
 			break;
 		case BACKSPACE:
 			put_key(p_tty, '\b');
-			if (p_tty->tempLen)
-			{
-				p_tty->tempLen--;
-			}
 			break;
 		case UP:
-			if ( ( key & FLAG_SHIFT_L ) || ( key & FLAG_SHIFT_R ) )
-			{
+			if ((key & FLAG_SHIFT_L) || (key & FLAG_SHIFT_R)) {	/* Shift + Up */
 				scroll_screen(p_tty->p_console, SCROLL_SCREEN_UP);
 			}
 			break;
 		case DOWN:
-			if ( ( key & FLAG_SHIFT_L ) || ( key & FLAG_SHIFT_R ) )
-			{
+			if ((key & FLAG_SHIFT_L) || (key & FLAG_SHIFT_R)) {	/* Shift + Down */
 				scroll_screen(p_tty->p_console, SCROLL_SCREEN_DOWN);
 			}
 			break;
@@ -163,14 +212,13 @@ PUBLIC void in_process(TTY* p_tty, t_32 key)
 		case F10:
 		case F11:
 		case F12:
-			if ((key & FLAG_ALT_L) || (key & FLAG_ALT_R))
-			{
+			if ((key & FLAG_ALT_L) || (key & FLAG_ALT_R)) {	/* Alt + F1~F12 */
 				select_console(raw_code - F1);
 			}
 			break;
 		default:
 			break;
-		}		
+		}
 	}
 }
 
@@ -180,13 +228,20 @@ PUBLIC void in_process(TTY* p_tty, t_32 key)
 *======================================================================*/
 PRIVATE void put_key(TTY* p_tty, t_32 key)
 {
-	if (p_tty->fAccept == FALSE) return;//是否可以接受字符
-	if (p_tty->fEcho   == FALSE) return;//显示是否打开
 	if (p_tty->inbuf_count < TTY_IN_BYTES) {
 		*(p_tty->p_inbuf_head) = key;
+		
+		//copy to cmdlinebuf
+		char ch = *(p_tty->p_inbuf_head);
+		if (ch == '\n')
+			cmd_process(p_tty);
+		else if (ch == '\b')
+			cmdlinebuf[--cmdlinecount] = '\0';
+		else	
+			cmdlinebuf[cmdlinecount++] = ch;
+		
 		p_tty->p_inbuf_head++;
-		if (p_tty->p_inbuf_head == p_tty->in_buf + TTY_IN_BYTES)
-		{
+		if (p_tty->p_inbuf_head == p_tty->in_buf + TTY_IN_BYTES) {
 			p_tty->p_inbuf_head = p_tty->in_buf;
 		}
 		p_tty->inbuf_count++;
@@ -218,6 +273,7 @@ PRIVATE void tty_do_write(TTY* p_tty)
 		}
 		p_tty->inbuf_count--;
 
+		//disp_int(ch);
 		out_char(p_tty->p_console, ch);
 	}
 }
@@ -241,120 +297,10 @@ PUBLIC void tty_write(TTY* p_tty, char* buf, int len)
 /*======================================================================*
                               sys_write
 *======================================================================*/
-PUBLIC int sys_write(PROCESS * p_proc, char * buf, int len)
+PUBLIC int sys_write(char* buf, int len, PROCESS* p_proc)
 {
 	tty_write(&tty_table[p_proc->nr_tty], buf, len);
 	return 0;
 }
 
-
-/*======================================================================*
-                              sys_getchar
-*======================================================================*/
-PUBLIC char sys_getchar(PROCESS * p_proc)
-{
-	TTY * p_proc_tty = &tty_table[p_proc->nr_tty];
-	
-	return tty_outbuf_getchar(p_proc_tty);
-}
-
-
-/*======================================================================*
-                              tty_outbuf_getchar
-*======================================================================*/
-PRIVATE char tty_outbuf_getchar(TTY * p_tty)
-{
-	if (p_tty->outbuf_count == 0) {return 0;}
-	char chRet = *p_tty->p_outbuf_tail++;
-	p_tty->outbuf_count--;
-	if (p_tty->p_outbuf_tail == p_tty->out_buf + TTY_IN_BYTES)
-	{
-		p_tty->p_outbuf_tail = p_tty->out_buf;
-	}
-	return chRet;
-}
-
-
-/*======================================================================*
-                              tty_tempbuf_putchar
-*======================================================================*/
-PRIVATE void tty_tempbuf_putchar(TTY * p_tty, char ch)
-{
-	if (p_tty->fAccept == FALSE) return;
-
-	if (p_tty->tempLen == TTY_IN_BYTES) return;
-
-	p_tty->tempBuffer[p_tty->tempLen] = ch;
-	p_tty->tempLen++;
-}
-
-
-/*======================================================================*
-                              tty_tempbuf_to_outbuf
-*======================================================================*/
-PRIVATE void tty_tempbuf_to_outbuf(TTY * p_tty)
-{
-	int i;
-	for ( i = 0 ; i < p_tty->tempLen ; ++i )
-	{
-		*p_tty->p_outbuf_head++ = p_tty->tempBuffer[i];
-		if (p_tty->p_outbuf_head == p_tty->out_buf + TTY_IN_BYTES)
-		{
-			p_tty->p_outbuf_head = p_tty->out_buf;
-		}
-		p_tty->outbuf_count++;
-		if (p_tty->outbuf_count == TTY_IN_BYTES)
-		{
-			break;
-		}
-	}
-	p_tty->tempLen = 0;
-}
-
-
-/*======================================================================*
-                             sys_echoon
-*======================================================================*/
-PUBLIC void sys_echoon(PROCESS * p_proc)
-{
-	tty_table[p_proc->nr_tty].fEcho = TRUE;
-}
-
-
-/*======================================================================*
-                             sys_echooff
-*======================================================================*/
-PUBLIC void sys_echooff(PROCESS * p_proc)
-{
-	tty_table[p_proc->nr_tty].fEcho = FALSE;
-}
-
-
-/*======================================================================*
-                             sys_accepton
-*======================================================================*/
-PUBLIC void sys_accepton(PROCESS * p_proc)
-{
-	tty_table[p_proc->nr_tty].fAccept = TRUE;
-}
-
-
-/*======================================================================*
-                            sys_acceptoff
-*======================================================================*/
-PUBLIC void sys_acceptoff(PROCESS * p_proc)
-{
-	tty_table[p_proc->nr_tty].fAccept = FALSE;
-}
-
-
-/*======================================================================*
-                           sys_flush
-*======================================================================*/
-PUBLIC void sys_flush(PROCESS * p_proc)
-{
-	tty_table[p_proc->nr_tty].outbuf_count = 0;
-	tty_table[p_proc->nr_tty].p_outbuf_head = tty_table[p_proc->nr_tty].out_buf;
-	tty_table[p_proc->nr_tty].p_outbuf_tail = tty_table[p_proc->nr_tty].out_buf;
-}
 

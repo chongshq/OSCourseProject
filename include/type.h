@@ -24,5 +24,7 @@ typedef	void	(*t_pf_irq_handler)	(int irq);
 
 typedef	void*	t_sys_call;
 
+typedef short	t_fd;			// ÎÄ¼şÃèÊö·û
+typedef	t_16	t_blknum;		// ¿éºÅ
 
 #endif /* _TINIX_TYPE_H_ */

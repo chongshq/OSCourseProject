@@ -8,46 +8,19 @@
 %include "sconst.inc"
 
 INT_VECTOR_SYS_CALL	equ	0x90
-;11个系统调用
-_NR_get_ticks	equ	0
-_NR_write	equ	1
-_NR_getchar	equ	2
-_NR_clear	equ	3
-_NR_shut	equ	4
-_NR_echoon	equ	5
-_NR_echooff	equ	6
-_NR_accepton	equ	7
-_NR_acceptoff	equ	8
-_NR_flush	equ	9
-_NR_dispmode	equ	10
+_NR_get_ticks		equ	0
+_NR_write		equ	1
 
 
 ; 导出符号
-global get_ticks
-global write
-global s_getchar
-global clear
-global shutdown
-global echoon
-global echooff
-global accepton
-global acceptoff
-global flush
-global dispmode
+global	get_ticks
+global	write
+
 
 bits 32
 [section .text]
 
 ; 注意：dx 的值在 save() 中被改变，所以传递参数不能使用 edx！
-; ====================================================================================
-;                                    dispmode
-; ====================================================================================
-dispmode:
-	mov	eax, _NR_dispmode
-	mov 	ebx, [esp+4]
-	mov ecx, [esp+8]
-	int	INT_VECTOR_SYS_CALL
-	ret
 
 ; ====================================================================================
 ;                                    get_ticks
@@ -58,7 +31,7 @@ get_ticks:
 	ret
 
 ; ====================================================================================
-;					 write
+;                          void write(char* buf, int len);
 ; ====================================================================================
 write:
 	mov	eax, _NR_write
@@ -66,59 +39,4 @@ write:
 	mov	ecx, [esp + 8]
 	int	INT_VECTOR_SYS_CALL
 	ret
-; ====================================================================================
-;					 getchar
-; ====================================================================================
-s_getchar:
-	mov eax, _NR_getchar
-	int INT_VECTOR_SYS_CALL
-	ret
-; ====================================================================================
-;					 clear
-; ====================================================================================
-clear:
-	mov eax, _NR_clear
-	int INT_VECTOR_SYS_CALL
-	ret
-; ====================================================================================
-;					  shutdown
-; ====================================================================================
-shutdown:
-	mov eax, _NR_shut
-	int INT_VECTOR_SYS_CALL
-	ret
-; ====================================================================================
-;					  echoon
-; ====================================================================================
-echoon:
-	mov eax, _NR_echoon
-	int INT_VECTOR_SYS_CALL
-	ret
-; ====================================================================================
-;					 echooff
-; ====================================================================================
-echooff:
-	mov eax, _NR_echooff
-	int INT_VECTOR_SYS_CALL
-	ret
-; ====================================================================================
-;				   accepton
-; ====================================================================================
-accepton:
-	mov eax, _NR_accepton
-	int INT_VECTOR_SYS_CALL
-	ret
-; ====================================================================================
-;				  acceptoff
-; ====================================================================================
-acceptoff:
-	mov eax, _NR_acceptoff
-	int INT_VECTOR_SYS_CALL
-	ret
-; ====================================================================================
-;				  flush
-; ====================================================================================
-flush:
-	mov eax, _NR_flush
-	int INT_VECTOR_SYS_CALL
-	ret
+
