@@ -6,28 +6,28 @@
 ; ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 
-;%define	_BOOT_DEBUG_	; ×ö Boot Sector Ê±Ò»¶¨½«´ËÐÐ×¢ÊÍµô!½«´ËÐÐ´ò¿ªºóÓÃ nasm Boot.asm -o Boot.com ×ö³ÉÒ»¸ö.COMÎÄ¼þÒ×ÓÚµ÷ÊÔ
+;%define	_BOOT_DEBUG_	; åš Boot Sector æ—¶ä¸€å®šå°†æ­¤è¡Œæ³¨é‡ŠæŽ‰!å°†æ­¤è¡Œæ‰“å¼€åŽç”¨ nasm Boot.asm -o Boot.com åšæˆä¸€ä¸ª.COMæ–‡ä»¶æ˜“äºŽè°ƒè¯•
 
 %ifdef	_BOOT_DEBUG_
-	org  0100h			; µ÷ÊÔ×´Ì¬, ×ö³É .COM ÎÄ¼þ, ¿Éµ÷ÊÔ
+	org  0100h			; è°ƒè¯•çŠ¶æ€, åšæˆ .COM æ–‡ä»¶, å¯è°ƒè¯•
 %else
-	org  07c00h			; Boot ×´Ì¬, Bios ½«°Ñ Boot Sector ¼ÓÔØµ½ 0:7C00 ´¦²¢¿ªÊ¼Ö´ÐÐ
+	org  07c00h			; Boot çŠ¶æ€, Bios å°†æŠŠ Boot Sector åŠ è½½åˆ° 0:7C00 å¤„å¹¶å¼€å§‹æ‰§è¡Œ
 %endif
 
 ;================================================================================================
 %ifdef	_BOOT_DEBUG_
-BaseOfStack		equ	0100h	; µ÷ÊÔ×´Ì¬ÏÂ¶ÑÕ»»ùµØÖ·(Õ»µ×, ´ÓÕâ¸öÎ»ÖÃÏòµÍµØÖ·Éú³¤)
+BaseOfStack		equ	0100h	; è°ƒè¯•çŠ¶æ€ä¸‹å †æ ˆåŸºåœ°å€(æ ˆåº•, ä»Žè¿™ä¸ªä½ç½®å‘ä½Žåœ°å€ç”Ÿé•¿)
 %else
-BaseOfStack		equ	07c00h	; Boot×´Ì¬ÏÂ¶ÑÕ»»ùµØÖ·(Õ»µ×, ´ÓÕâ¸öÎ»ÖÃÏòµÍµØÖ·Éú³¤)
+BaseOfStack		equ	07c00h	; BootçŠ¶æ€ä¸‹å †æ ˆåŸºåœ°å€(æ ˆåº•, ä»Žè¿™ä¸ªä½ç½®å‘ä½Žåœ°å€ç”Ÿé•¿)
 %endif
 
 %include	"load.inc"
 ;================================================================================================
 
 	jmp short LABEL_START		; Start to boot.
-	nop				; Õâ¸ö nop ²»¿ÉÉÙ
+	nop				; è¿™ä¸ª nop ä¸å¯å°‘
 
-; ÏÂÃæÊÇ FAT12 ´ÅÅÌµÄÍ·, Ö®ËùÒÔ°üº¬ËüÊÇÒòÎªÏÂÃæÓÃµ½ÁË´ÅÅÌµÄÒ»Ð©ÐÅÏ¢
+; ä¸‹é¢æ˜¯ FAT12 ç£ç›˜çš„å¤´, ä¹‹æ‰€ä»¥åŒ…å«å®ƒæ˜¯å› ä¸ºä¸‹é¢ç”¨åˆ°äº†ç£ç›˜çš„ä¸€äº›ä¿¡æ¯
 %include	"fat12hdr.inc"
 
 LABEL_START:	
@@ -37,60 +37,60 @@ LABEL_START:
 	mov	ss, ax
 	mov	sp, BaseOfStack
 
-	; ÇåÆÁ
+	; æ¸…å±
 	mov	ax, 0600h		; AH = 6,  AL = 0h
-	mov	bx, 0700h		; ºÚµ×°××Ö(BL = 07h)
-	mov	cx, 0			; ×óÉÏ½Ç: (0, 0)
-	mov	dx, 0184fh		; ÓÒÏÂ½Ç: (80, 50)
+	mov	bx, 0700h		; é»‘åº•ç™½å­—(BL = 07h)
+	mov	cx, 0			; å·¦ä¸Šè§’: (0, 0)
+	mov	dx, 0184fh		; å³ä¸‹è§’: (80, 50)
 	int	10h			; int 10h
 
 	mov	dh, 0			; "Booting  "
-	call	DispStr			; ÏÔÊ¾×Ö·û´®
+	call	DispStr			; æ˜¾ç¤ºå­—ç¬¦ä¸²
 	
-	xor	ah, ah	; ©·
-	xor	dl, dl	; ©Ç ÈíÇý¸´Î»
-	int	13h	; ©¿
+	xor	ah, ah	; â”“
+	xor	dl, dl	; â”£ è½¯é©±å¤ä½
+	int	13h	; â”›
 	
-; ÏÂÃæÔÚ A ÅÌµÄ¸ùÄ¿Â¼Ñ°ÕÒ LOADER.BIN
+; ä¸‹é¢åœ¨ A ç›˜çš„æ ¹ç›®å½•å¯»æ‰¾ LOADER.BIN
 	mov	word [wSectorNo], SectorNoOfRootDirectory
 LABEL_SEARCH_IN_ROOT_DIR_BEGIN:
-	cmp	word [wRootDirSizeForLoop], 0	; ©·
-	jz	LABEL_NO_LOADERBIN		; ©Ç ÅÐ¶Ï¸ùÄ¿Â¼ÇøÊÇ²»ÊÇÒÑ¾­¶ÁÍê
-	dec	word [wRootDirSizeForLoop]	; ©¿ Èç¹û¶ÁÍê±íÊ¾Ã»ÓÐÕÒµ½ LOADER.BIN
-	mov	ax, BaseOfLoader
-	mov	es, ax			; es <- BaseOfLoader
-	mov	bx, OffsetOfLoader	; bx <- OffsetOfLoader	ÓÚÊÇ, es:bx = BaseOfLoader:OffsetOfLoader
-	mov	ax, [wSectorNo]	; ax <- Root Directory ÖÐµÄÄ³ Sector ºÅ
+	cmp	word [wRootDirSizeForLoop], 0	; â”“
+	jz	LABEL_NO_LOADERBIN		; â”£ åˆ¤æ–­æ ¹ç›®å½•åŒºæ˜¯ä¸æ˜¯å·²ç»è¯»å®Œ
+	dec	word [wRootDirSizeForLoop]	; â”› å¦‚æžœè¯»å®Œè¡¨ç¤ºæ²¡æœ‰æ‰¾åˆ° LOADER.BIN
+	mov	ax, LOADER_SEG
+	mov	es, ax			; es <- LOADER_SEG
+	mov	bx, LOADER_OFF		; bx <- LOADER_OFF	äºŽæ˜¯, es:bx = LOADER_SEG:LOADER_OFF
+	mov	ax, [wSectorNo]		; ax <- Root Directory ä¸­çš„æŸ Sector å·
 	mov	cl, 1
 	call	ReadSector
 
 	mov	si, LoaderFileName	; ds:si -> "LOADER  BIN"
-	mov	di, OffsetOfLoader	; es:di -> BaseOfLoader:0100 = BaseOfLoader*10h+100
+	mov	di, LOADER_OFF		; es:di -> LOADER_SEG:0100 = LOADER_SEG*10h+100
 	cld
 	mov	dx, 10h
 LABEL_SEARCH_FOR_LOADERBIN:
-	cmp	dx, 0					; ©·Ñ­»·´ÎÊý¿ØÖÆ,
-	jz	LABEL_GOTO_NEXT_SECTOR_IN_ROOT_DIR	; ©ÇÈç¹ûÒÑ¾­¶ÁÍêÁËÒ»¸ö Sector,
-	dec	dx					; ©¿¾ÍÌøµ½ÏÂÒ»¸ö Sector
+	cmp	dx, 0					; â”“å¾ªçŽ¯æ¬¡æ•°æŽ§åˆ¶,
+	jz	LABEL_GOTO_NEXT_SECTOR_IN_ROOT_DIR	; â”£å¦‚æžœå·²ç»è¯»å®Œäº†ä¸€ä¸ª Sector,
+	dec	dx					; â”›å°±è·³åˆ°ä¸‹ä¸€ä¸ª Sector
 	mov	cx, 11
 LABEL_CMP_FILENAME:
 	cmp	cx, 0
-	jz	LABEL_FILENAME_FOUND	; Èç¹û±È½ÏÁË 11 ¸ö×Ö·û¶¼ÏàµÈ, ±íÊ¾ÕÒµ½
-dec	cx
+	jz	LABEL_FILENAME_FOUND	; å¦‚æžœæ¯”è¾ƒäº† 11 ä¸ªå­—ç¬¦éƒ½ç›¸ç­‰, è¡¨ç¤ºæ‰¾åˆ°
+	dec	cx
 	lodsb				; ds:si -> al
 	cmp	al, byte [es:di]
 	jz	LABEL_GO_ON
-	jmp	LABEL_DIFFERENT		; Ö»Òª·¢ÏÖ²»Ò»ÑùµÄ×Ö·û¾Í±íÃ÷±¾ DirectoryEntry ²»ÊÇ
-; ÎÒÃÇÒªÕÒµÄ LOADER.BIN
+	jmp	LABEL_DIFFERENT		; åªè¦å‘çŽ°ä¸ä¸€æ ·çš„å­—ç¬¦å°±è¡¨æ˜Žæœ¬ DirectoryEntry ä¸æ˜¯
+; æˆ‘ä»¬è¦æ‰¾çš„ LOADER.BIN
 LABEL_GO_ON:
 	inc	di
-	jmp	LABEL_CMP_FILENAME	;	¼ÌÐøÑ­»·
+	jmp	LABEL_CMP_FILENAME	;	ç»§ç»­å¾ªçŽ¯
 
 LABEL_DIFFERENT:
-	and	di, 0FFE0h		; else ©·	di &= E0 ÎªÁËÈÃËüÖ¸Ïò±¾ÌõÄ¿¿ªÍ·
-	add	di, 20h			;      ©§
-	mov	si, LoaderFileName	;      ©Ç di += 20h  ÏÂÒ»¸öÄ¿Â¼ÌõÄ¿
-	jmp	LABEL_SEARCH_FOR_LOADERBIN;    ©¿
+	and	di, 0FFE0h		; else â”“	di &= E0 ä¸ºäº†è®©å®ƒæŒ‡å‘æœ¬æ¡ç›®å¼€å¤´
+	add	di, 20h			;      â”ƒ
+	mov	si, LoaderFileName	;      â”£ di += 20h  ä¸‹ä¸€ä¸ªç›®å½•æ¡ç›®
+	jmp	LABEL_SEARCH_FOR_LOADERBIN;    â”›
 
 LABEL_GOTO_NEXT_SECTOR_IN_ROOT_DIR:
 	add	word [wSectorNo], 1
@@ -98,44 +98,44 @@ LABEL_GOTO_NEXT_SECTOR_IN_ROOT_DIR:
 
 LABEL_NO_LOADERBIN:
 	mov	dh, 2			; "No LOADER."
-	call	DispStr			; ÏÔÊ¾×Ö·û´®
+	call	DispStr			; æ˜¾ç¤ºå­—ç¬¦ä¸²
 %ifdef	_BOOT_DEBUG_
-	mov	ax, 4c00h		; ©·
-	int	21h			; ©¿Ã»ÓÐÕÒµ½ LOADER.BIN, »Øµ½ DOS
+	mov	ax, 4c00h		; â”“
+	int	21h			; â”›æ²¡æœ‰æ‰¾åˆ° LOADER.BIN, å›žåˆ° DOS
 %else
-	jmp	$			; Ã»ÓÐÕÒµ½ LOADER.BIN, ËÀÑ­»·ÔÚÕâÀï
+	jmp	$			; æ²¡æœ‰æ‰¾åˆ° LOADER.BIN, æ­»å¾ªçŽ¯åœ¨è¿™é‡Œ
 %endif
 
-LABEL_FILENAME_FOUND:			; ÕÒµ½ LOADER.BIN ºó±ãÀ´µ½ÕâÀï¼ÌÐø
+LABEL_FILENAME_FOUND:			; æ‰¾åˆ° LOADER.BIN åŽä¾¿æ¥åˆ°è¿™é‡Œç»§ç»­
 	mov	ax, RootDirSectors
-	and	di, 0FFE0h		; di -> µ±Ç°ÌõÄ¿µÄ¿ªÊ¼
-	add	di, 01Ah		; di -> Ê× Sector
+	and	di, 0FFE0h		; di -> å½“å‰æ¡ç›®çš„å¼€å§‹
+	add	di, 01Ah		; di -> é¦– Sector
 	mov	cx, word [es:di]
-	push	cx			; ±£´æ´Ë Sector ÔÚ FAT ÖÐµÄÐòºÅ
+	push	cx			; ä¿å­˜æ­¤ Sector åœ¨ FAT ä¸­çš„åºå·
 	add	cx, ax
-	add	cx, DeltaSectorNo	; Õâ¾äÍê³ÉÊ± cl ÀïÃæ±ä³É LOADER.BIN µÄÆðÊ¼ÉÈÇøºÅ (´Ó 0 ¿ªÊ¼ÊýµÄÐòºÅ)
-	mov	ax, BaseOfLoader
-	mov	es, ax			; es <- BaseOfLoader
-	mov	bx, OffsetOfLoader	; bx <- OffsetOfLoader	ÓÚÊÇ, es:bx = BaseOfLoader:OffsetOfLoader = BaseOfLoader * 10h + OffsetOfLoader
-	mov	ax, cx			; ax <- Sector ºÅ
+	add	cx, DeltaSectorNo	; è¿™å¥å®Œæˆæ—¶ cl é‡Œé¢å˜æˆ LOADER.BIN çš„èµ·å§‹æ‰‡åŒºå· (ä»Ž 0 å¼€å§‹æ•°çš„åºå·)
+	mov	ax, LOADER_SEG
+	mov	es, ax			; es <- LOADER_SEG
+	mov	bx, LOADER_OFF		; bx <- LOADER_OFF	äºŽæ˜¯, es:bx = LOADER_SEG:LOADER_OFF = LOADER_SEG * 10h + LOADER_OFF
+	mov	ax, cx			; ax <- Sector å·
 
 LABEL_GOON_LOADING_FILE:
-	push	ax			; ©·
-	push	bx			; ©§
-	mov	ah, 0Eh			; ©§ Ã¿¶ÁÒ»¸öÉÈÇø¾ÍÔÚ "Booting  " ºóÃæ´òÒ»¸öµã, ÐÎ³ÉÕâÑùµÄÐ§¹û:
-	mov	al, '.'			; ©§
-	mov	bl, 0Fh			; ©§ Booting ......
-	int	10h			; ©§
-	pop	bx			; ©§
-	pop	ax			; ©¿
+	push	ax			; â”“
+	push	bx			; â”ƒ
+	mov	ah, 0Eh			; â”ƒ æ¯è¯»ä¸€ä¸ªæ‰‡åŒºå°±åœ¨ "Booting  " åŽé¢æ‰“ä¸€ä¸ªç‚¹, å½¢æˆè¿™æ ·çš„æ•ˆæžœ:
+	mov	al, '.'			; â”ƒ
+	mov	bl, 0Fh			; â”ƒ Booting ......
+	int	10h			; â”ƒ
+	pop	bx			; â”ƒ
+	pop	ax			; â”›
 
 	mov	cl, 1
 	call	ReadSector
-	pop	ax			; È¡³ö´Ë Sector ÔÚ FAT ÖÐµÄÐòºÅ
+	pop	ax			; å–å‡ºæ­¤ Sector åœ¨ FAT ä¸­çš„åºå·
 	call	GetFATEntry
 	cmp	ax, 0FFFh
 	jz	LABEL_FILE_LOADED
-	push	ax			; ±£´æ Sector ÔÚ FAT ÖÐµÄÐòºÅ
+	push	ax			; ä¿å­˜ Sector åœ¨ FAT ä¸­çš„åºå·
 	mov	dx, RootDirSectors
 	add	ax, dx
 	add	ax, DeltaSectorNo
@@ -144,92 +144,92 @@ LABEL_GOON_LOADING_FILE:
 LABEL_FILE_LOADED:
 
 	mov	dh, 1			; "Ready."
-	call	DispStr			; ÏÔÊ¾×Ö·û´®
+	call	DispStr			; æ˜¾ç¤ºå­—ç¬¦ä¸²
 
 ; *****************************************************************************************************
-	jmp	BaseOfLoader:OffsetOfLoader	; ÕâÒ»¾äÕýÊ½Ìø×ªµ½ÒÑ¼ÓÔØµ½ÄÚ´æÖÐµÄ LOADER.BIN µÄ¿ªÊ¼´¦
-						; ¿ªÊ¼Ö´ÐÐ LOADER.BIN µÄ´úÂë
-						; Boot Sector µÄÊ¹Ãüµ½´Ë½áÊø
+	jmp	LOADER_SEG:LOADER_OFF	; è¿™ä¸€å¥æ­£å¼è·³è½¬åˆ°å·²åŠ è½½åˆ°å†…å­˜ä¸­çš„ LOADER.BIN çš„å¼€å§‹å¤„
+						; å¼€å§‹æ‰§è¡Œ LOADER.BIN çš„ä»£ç 
+						; Boot Sector çš„ä½¿å‘½åˆ°æ­¤ç»“æŸ
 ; *****************************************************************************************************
 
 
 
 ;============================================================================
-;±äÁ¿
+;å˜é‡
 ;----------------------------------------------------------------------------
-wRootDirSizeForLoop	dw	RootDirSectors	; Root Directory Õ¼ÓÃµÄÉÈÇøÊý, ÔÚÑ­»·ÖÐ»áµÝ¼õÖÁÁã.
-wSectorNo		dw	0		; Òª¶ÁÈ¡µÄÉÈÇøºÅ
-bOdd			db	0		; ÆæÊý»¹ÊÇÅ¼Êý
+wRootDirSizeForLoop	dw	RootDirSectors	; Root Directory å ç”¨çš„æ‰‡åŒºæ•°, åœ¨å¾ªçŽ¯ä¸­ä¼šé€’å‡è‡³é›¶.
+wSectorNo		dw	0		; è¦è¯»å–çš„æ‰‡åŒºå·
+bOdd			db	0		; å¥‡æ•°è¿˜æ˜¯å¶æ•°
 
 ;============================================================================
-;×Ö·û´®
+;å­—ç¬¦ä¸²
 ;----------------------------------------------------------------------------
-LoaderFileName		db	"LOADER  BIN", 0	; LOADER.BIN Ö®ÎÄ¼þÃû
-; Îª¼ò»¯´úÂë, ÏÂÃæÃ¿¸ö×Ö·û´®µÄ³¤¶È¾ùÎª MessageLength
+LoaderFileName		db	"LOADER  BIN", 0	; LOADER.BIN ä¹‹æ–‡ä»¶å
+; ä¸ºç®€åŒ–ä»£ç , ä¸‹é¢æ¯ä¸ªå­—ç¬¦ä¸²çš„é•¿åº¦å‡ä¸º MessageLength
 MessageLength		equ	9
-BootMessage:		db	"Booting  "; 9×Ö½Ú, ²»¹»ÔòÓÃ¿Õ¸ñ²¹Æë. ÐòºÅ 0
-Message1		db	"Ready.   "; 9×Ö½Ú, ²»¹»ÔòÓÃ¿Õ¸ñ²¹Æë. ÐòºÅ 1
-Message2		db	"No LOADER"; 9×Ö½Ú, ²»¹»ÔòÓÃ¿Õ¸ñ²¹Æë. ÐòºÅ 2
+BootMessage:		db	"Booting  "; 9å­—èŠ‚, ä¸å¤Ÿåˆ™ç”¨ç©ºæ ¼è¡¥é½. åºå· 0
+Message1		db	"Ready.   "; 9å­—èŠ‚, ä¸å¤Ÿåˆ™ç”¨ç©ºæ ¼è¡¥é½. åºå· 1
+Message2		db	"No LOADER"; 9å­—èŠ‚, ä¸å¤Ÿåˆ™ç”¨ç©ºæ ¼è¡¥é½. åºå· 2
 ;============================================================================
 
 
 ;----------------------------------------------------------------------------
-; º¯ÊýÃû: DispStr
+; å‡½æ•°å: DispStr
 ;----------------------------------------------------------------------------
-; ×÷ÓÃ:
-;	ÏÔÊ¾Ò»¸ö×Ö·û´®, º¯Êý¿ªÊ¼Ê± dh ÖÐÓ¦¸ÃÊÇ×Ö·û´®ÐòºÅ(0-based)
+; ä½œç”¨:
+;	æ˜¾ç¤ºä¸€ä¸ªå­—ç¬¦ä¸², å‡½æ•°å¼€å§‹æ—¶ dh ä¸­åº”è¯¥æ˜¯å­—ç¬¦ä¸²åºå·(0-based)
 DispStr:
 	mov	ax, MessageLength
 	mul	dh
 	add	ax, BootMessage
-	mov	bp, ax			; ©·
-	mov	ax, ds			; ©Ç ES:BP = ´®µØÖ·
-	mov	es, ax			; ©¿
-	mov	cx, MessageLength	; CX = ´®³¤¶È
+	mov	bp, ax			; â”“
+	mov	ax, ds			; â”£ ES:BP = ä¸²åœ°å€
+	mov	es, ax			; â”›
+	mov	cx, MessageLength	; CX = ä¸²é•¿åº¦
 	mov	ax, 01301h		; AH = 13,  AL = 01h
-	mov	bx, 0007h		; Ò³ºÅÎª0(BH = 0) ºÚµ×°××Ö(BL = 07h)
+	mov	bx, 0007h		; é¡µå·ä¸º0(BH = 0) é»‘åº•ç™½å­—(BL = 07h)
 	mov	dl, 0
 	int	10h			; int 10h
 	ret
 
 
 ;----------------------------------------------------------------------------
-; º¯ÊýÃû: ReadSector
+; å‡½æ•°å: ReadSector
 ;----------------------------------------------------------------------------
-; ×÷ÓÃ:
-;	´ÓµÚ ax ¸ö Sector ¿ªÊ¼, ½« cl ¸ö Sector ¶ÁÈë es:bx ÖÐ
+; ä½œç”¨:
+;	ä»Žç¬¬ ax ä¸ª Sector å¼€å§‹, å°† cl ä¸ª Sector è¯»å…¥ es:bx ä¸­
 ReadSector:
 	; -----------------------------------------------------------------------
-	; ÔõÑùÓÉÉÈÇøºÅÇóÉÈÇøÔÚ´ÅÅÌÖÐµÄÎ»ÖÃ (ÉÈÇøºÅ -> ÖùÃæºÅ, ÆðÊ¼ÉÈÇø, ´ÅÍ·ºÅ)
+	; æ€Žæ ·ç”±æ‰‡åŒºå·æ±‚æ‰‡åŒºåœ¨ç£ç›˜ä¸­çš„ä½ç½® (æ‰‡åŒºå· -> æŸ±é¢å·, èµ·å§‹æ‰‡åŒº, ç£å¤´å·)
 	; -----------------------------------------------------------------------
-	; ÉèÉÈÇøºÅÎª x
-	;                           ©° ÖùÃæºÅ = y >> 1
-	;       x           ©° ÉÌ y ©È
-	; -------------- => ©È      ©¸ ´ÅÍ·ºÅ = y & 1
-	;  Ã¿´ÅµÀÉÈÇøÊý     ©¦
-	;                   ©¸ Óà z => ÆðÊ¼ÉÈÇøºÅ = z + 1
+	; è®¾æ‰‡åŒºå·ä¸º x
+	;                           â”Œ æŸ±é¢å· = y >> 1
+	;       x           â”Œ å•† y â”¤
+	; -------------- => â”¤      â”” ç£å¤´å· = y & 1
+	;  æ¯ç£é“æ‰‡åŒºæ•°     â”‚
+	;                   â”” ä½™ z => èµ·å§‹æ‰‡åŒºå· = z + 1
 	push	bp
 	mov	bp, sp
-	sub	esp, 2			; ±Ù³öÁ½¸ö×Ö½ÚµÄ¶ÑÕ»ÇøÓò±£´æÒª¶ÁµÄÉÈÇøÊý: byte [bp-2]
+	sub	esp, 2			; è¾Ÿå‡ºä¸¤ä¸ªå­—èŠ‚çš„å †æ ˆåŒºåŸŸä¿å­˜è¦è¯»çš„æ‰‡åŒºæ•°: byte [bp-2]
 
 	mov	byte [bp-2], cl
-	push	bx			; ±£´æ bx
-	mov	bl, [BPB_SecPerTrk]	; bl: ³ýÊý
-	div	bl			; y ÔÚ al ÖÐ, z ÔÚ ah ÖÐ
+	push	bx			; ä¿å­˜ bx
+	mov	bl, [BPB_SecPerTrk]	; bl: é™¤æ•°
+	div	bl			; y åœ¨ al ä¸­, z åœ¨ ah ä¸­
 	inc	ah			; z ++
-	mov	cl, ah			; cl <- ÆðÊ¼ÉÈÇøºÅ
+	mov	cl, ah			; cl <- èµ·å§‹æ‰‡åŒºå·
 	mov	dh, al			; dh <- y
-	shr	al, 1			; y >> 1 (ÆäÊµÊÇ y/BPB_NumHeads, ÕâÀïBPB_NumHeads=2)
-	mov	ch, al			; ch <- ÖùÃæºÅ
-	and	dh, 1			; dh & 1 = ´ÅÍ·ºÅ
-	pop	bx			; »Ö¸´ bx
-	; ÖÁ´Ë, "ÖùÃæºÅ, ÆðÊ¼ÉÈÇø, ´ÅÍ·ºÅ" È«²¿µÃµ½ ^^^^^^^^^^^^^^^^^^^^^^^^
-	mov	dl, [BS_DrvNum]		; Çý¶¯Æ÷ºÅ (0 ±íÊ¾ A ÅÌ)
+	shr	al, 1			; y >> 1 (å…¶å®žæ˜¯ y/BPB_NumHeads, è¿™é‡ŒBPB_NumHeads=2)
+	mov	ch, al			; ch <- æŸ±é¢å·
+	and	dh, 1			; dh & 1 = ç£å¤´å·
+	pop	bx			; æ¢å¤ bx
+	; è‡³æ­¤, "æŸ±é¢å·, èµ·å§‹æ‰‡åŒº, ç£å¤´å·" å…¨éƒ¨å¾—åˆ° ^^^^^^^^^^^^^^^^^^^^^^^^
+	mov	dl, [BS_DrvNum]		; é©±åŠ¨å™¨å· (0 è¡¨ç¤º A ç›˜)
 .GoOnReading:
-	mov	ah, 2			; ¶Á
-	mov	al, byte [bp-2]		; ¶Á al ¸öÉÈÇø
+	mov	ah, 2			; è¯»
+	mov	al, byte [bp-2]		; è¯» al ä¸ªæ‰‡åŒº
 	int	13h
-	jc	.GoOnReading		; Èç¹û¶ÁÈ¡´íÎó CF »á±»ÖÃÎª 1, ÕâÊ±¾Í²»Í£µØ¶Á, Ö±µ½ÕýÈ·ÎªÖ¹
+	jc	.GoOnReading		; å¦‚æžœè¯»å–é”™è¯¯ CF ä¼šè¢«ç½®ä¸º 1, è¿™æ—¶å°±ä¸åœåœ°è¯», ç›´åˆ°æ­£ç¡®ä¸ºæ­¢
 
 	add	esp, 2
 	pop	bp
@@ -237,37 +237,37 @@ ReadSector:
 	ret
 
 ;----------------------------------------------------------------------------
-; º¯ÊýÃû: GetFATEntry
+; å‡½æ•°å: GetFATEntry
 ;----------------------------------------------------------------------------
-; ×÷ÓÃ:
-;	ÕÒµ½ÐòºÅÎª ax µÄ Sector ÔÚ FAT ÖÐµÄÌõÄ¿, ½á¹û·ÅÔÚ ax ÖÐ
-;	ÐèÒª×¢ÒâµÄÊÇ, ÖÐ¼äÐèÒª¶Á FAT µÄÉÈÇøµ½ es:bx ´¦, ËùÒÔº¯ÊýÒ»¿ªÊ¼±£´æÁË es ºÍ bx
+; ä½œç”¨:
+;	æ‰¾åˆ°åºå·ä¸º ax çš„ Sector åœ¨ FAT ä¸­çš„æ¡ç›®, ç»“æžœæ”¾åœ¨ ax ä¸­
+;	éœ€è¦æ³¨æ„çš„æ˜¯, ä¸­é—´éœ€è¦è¯» FAT çš„æ‰‡åŒºåˆ° es:bx å¤„, æ‰€ä»¥å‡½æ•°ä¸€å¼€å§‹ä¿å­˜äº† es å’Œ bx
 GetFATEntry:
 	push	es
 	push	bx
 	push	ax
-	mov	ax, BaseOfLoader	; ©·
-	sub	ax, 0100h		; ©Ç ÔÚ BaseOfLoader ºóÃæÁô³ö 4K ¿Õ¼äÓÃÓÚ´æ·Å FAT
-	mov	es, ax			; ©¿
+	mov	ax, LOADER_SEG	; â”“
+	sub	ax, 0100h		; â”£ åœ¨ LOADER_SEG åŽé¢ç•™å‡º 4K ç©ºé—´ç”¨äºŽå­˜æ”¾ FAT
+	mov	es, ax			; â”›
 	pop	ax
 	mov	byte [bOdd], 0
 	mov	bx, 3
 	mul	bx			; dx:ax = ax * 3
 	mov	bx, 2
-	div	bx			; dx:ax / 2  ==>  ax <- ÉÌ, dx <- ÓàÊý
+	div	bx			; dx:ax / 2  ==>  ax <- å•†, dx <- ä½™æ•°
 	cmp	dx, 0
 	jz	LABEL_EVEN
 	mov	byte [bOdd], 1
-LABEL_EVEN:;Å¼Êý
-	xor	dx, dx			; ÏÖÔÚ ax ÖÐÊÇ FATEntry ÔÚ FAT ÖÐµÄÆ«ÒÆÁ¿. ÏÂÃæÀ´¼ÆËã FATEntry ÔÚÄÄ¸öÉÈÇøÖÐ(FATÕ¼ÓÃ²»Ö¹Ò»¸öÉÈÇø)
+LABEL_EVEN:;å¶æ•°
+	xor	dx, dx			; çŽ°åœ¨ ax ä¸­æ˜¯ FATEntry åœ¨ FAT ä¸­çš„åç§»é‡. ä¸‹é¢æ¥è®¡ç®— FATEntry åœ¨å“ªä¸ªæ‰‡åŒºä¸­(FATå ç”¨ä¸æ­¢ä¸€ä¸ªæ‰‡åŒº)
 	mov	bx, [BPB_BytsPerSec]
-	div	bx			; dx:ax / BPB_BytsPerSec  ==>	ax <- ÉÌ   (FATEntry ËùÔÚµÄÉÈÇøÏà¶ÔÓÚ FAT À´ËµµÄÉÈÇøºÅ)
-					;				dx <- ÓàÊý (FATEntry ÔÚÉÈÇøÄÚµÄÆ«ÒÆ)¡£
+	div	bx			; dx:ax / BPB_BytsPerSec  ==>	ax <- å•†   (FATEntry æ‰€åœ¨çš„æ‰‡åŒºç›¸å¯¹äºŽ FAT æ¥è¯´çš„æ‰‡åŒºå·)
+					;				dx <- ä½™æ•° (FATEntry åœ¨æ‰‡åŒºå†…çš„åç§»)ã€‚
 	push	dx
-	mov	bx, 0			; bx <- 0	ÓÚÊÇ, es:bx = (BaseOfLoader - 100):00 = (BaseOfLoader - 100) * 10h
-	add	ax, SectorNoOfFAT1	; ´Ë¾äÖ´ÐÐÖ®ºóµÄ ax ¾ÍÊÇ FATEntry ËùÔÚµÄÉÈÇøºÅ
+	mov	bx, 0			; bx <- 0	äºŽæ˜¯, es:bx = (LOADER_SEG - 100):00 = (LOADER_SEG - 100) * 10h
+	add	ax, SectorNoOfFAT1	; æ­¤å¥æ‰§è¡Œä¹‹åŽçš„ ax å°±æ˜¯ FATEntry æ‰€åœ¨çš„æ‰‡åŒºå·
 	mov	cl, 2
-	call	ReadSector		; ¶ÁÈ¡ FATEntry ËùÔÚµÄÉÈÇø, Ò»´Î¶ÁÁ½¸ö, ±ÜÃâÔÚ±ß½ç·¢Éú´íÎó, ÒòÎªÒ»¸ö FATEntry ¿ÉÄÜ¿çÔ½Á½¸öÉÈÇø
+	call	ReadSector		; è¯»å– FATEntry æ‰€åœ¨çš„æ‰‡åŒº, ä¸€æ¬¡è¯»ä¸¤ä¸ª, é¿å…åœ¨è¾¹ç•Œå‘ç”Ÿé”™è¯¯, å› ä¸ºä¸€ä¸ª FATEntry å¯èƒ½è·¨è¶Šä¸¤ä¸ªæ‰‡åŒº
 	pop	dx
 	add	bx, dx
 	mov	ax, [es:bx]
@@ -284,5 +284,5 @@ LABEL_GET_FAT_ENRY_OK:
 	ret
 ;----------------------------------------------------------------------------
 
-times 	510-($-$$)	db	0	; Ìî³äÊ£ÏÂµÄ¿Õ¼ä£¬Ê¹Éú³ÉµÄ¶þ½øÖÆ´úÂëÇ¡ºÃÎª512×Ö½Ú
-dw 	0xaa55				; ½áÊø±êÖ¾
+times 	510-($-$$)	db	0	; å¡«å……å‰©ä¸‹çš„ç©ºé—´ï¼Œä½¿ç”Ÿæˆçš„äºŒè¿›åˆ¶ä»£ç æ°å¥½ä¸º512å­—èŠ‚
+dw 	0xaa55				; ç»“æŸæ ‡å¿—

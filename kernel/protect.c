@@ -6,22 +6,23 @@
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 
 #include "type.h"
+#include "stdio.h"
 #include "const.h"
 #include "protect.h"
-#include "proc.h"
+#include "fs.h"
 #include "tty.h"
 #include "console.h"
-#include "file.h"
+#include "proc.h"
+#include "string.h"
 #include "global.h"
 #include "proto.h"
 
 
-/* ±æŒƒº˛ƒ⁄∫Ø ˝…˘√˜ */
-PRIVATE void init_idt_desc(unsigned char vector, t_8 desc_type, t_pf_int_handler handler, unsigned char privilege);
-PRIVATE void init_descriptor(DESCRIPTOR * p_desc, t_32 base, t_32 limit, t_16 attribute);
+/* Êú¨Êñá‰ª∂ÂÜÖÂáΩÊï∞Â£∞Êòé */
+PRIVATE void init_idt_desc(unsigned char vector, u8 desc_type, int_handler handler, unsigned char privilege);
 
 
-/* ÷–∂œ¥¶¿Ì∫Ø ˝ */
+/* ‰∏≠Êñ≠Â§ÑÁêÜÂáΩÊï∞ */
 void	divide_error();
 void	single_step_exception();
 void	nmi();
@@ -59,82 +60,145 @@ void	hwint15();
 /*======================================================================*
                             init_prot
  *----------------------------------------------------------------------*
- ≥ı ºªØ IDT
+ ÂàùÂßãÂåñ IDT
  *======================================================================*/
 PUBLIC void init_prot()
 {
 	init_8259A();
 
-	// »´≤ø≥ı ºªØ≥…÷–∂œ√≈(√ª”–œ›⁄Â√≈)
-	init_idt_desc(INT_VECTOR_DIVIDE,	DA_386IGate, divide_error,		PRIVILEGE_KRNL);
-	init_idt_desc(INT_VECTOR_DEBUG,		DA_386IGate, single_step_exception,	PRIVILEGE_KRNL);
-	init_idt_desc(INT_VECTOR_NMI,		DA_386IGate, nmi,			PRIVILEGE_KRNL);
-	init_idt_desc(INT_VECTOR_BREAKPOINT,	DA_386IGate, breakpoint_exception,	PRIVILEGE_USER);
-	init_idt_desc(INT_VECTOR_OVERFLOW,	DA_386IGate, overflow,			PRIVILEGE_USER);
-	init_idt_desc(INT_VECTOR_BOUNDS,	DA_386IGate, bounds_check,		PRIVILEGE_KRNL);
-	init_idt_desc(INT_VECTOR_INVAL_OP,	DA_386IGate, inval_opcode,		PRIVILEGE_KRNL);
-	init_idt_desc(INT_VECTOR_COPROC_NOT,	DA_386IGate, copr_not_available,	PRIVILEGE_KRNL);
-	init_idt_desc(INT_VECTOR_DOUBLE_FAULT,	DA_386IGate, double_fault,		PRIVILEGE_KRNL);
-	init_idt_desc(INT_VECTOR_COPROC_SEG,	DA_386IGate, copr_seg_overrun,		PRIVILEGE_KRNL);
-	init_idt_desc(INT_VECTOR_INVAL_TSS,	DA_386IGate, inval_tss,			PRIVILEGE_KRNL);
-	init_idt_desc(INT_VECTOR_SEG_NOT,	DA_386IGate, segment_not_present,	PRIVILEGE_KRNL);
-	init_idt_desc(INT_VECTOR_STACK_FAULT,	DA_386IGate, stack_exception,		PRIVILEGE_KRNL);
-	init_idt_desc(INT_VECTOR_PROTECTION,	DA_386IGate, general_protection,	PRIVILEGE_KRNL);
-	init_idt_desc(INT_VECTOR_PAGE_FAULT,	DA_386IGate, page_fault,		PRIVILEGE_KRNL);
-	init_idt_desc(INT_VECTOR_COPROC_ERR,	DA_386IGate, copr_error,		PRIVILEGE_KRNL);
-	init_idt_desc(INT_VECTOR_IRQ0 + 0,	DA_386IGate, hwint00,			PRIVILEGE_KRNL);
-	init_idt_desc(INT_VECTOR_IRQ0 + 1,	DA_386IGate, hwint01,			PRIVILEGE_KRNL);
-	init_idt_desc(INT_VECTOR_IRQ0 + 2,	DA_386IGate, hwint02,			PRIVILEGE_KRNL);
-	init_idt_desc(INT_VECTOR_IRQ0 + 3,	DA_386IGate, hwint03,			PRIVILEGE_KRNL);
-	init_idt_desc(INT_VECTOR_IRQ0 + 4,	DA_386IGate, hwint04,			PRIVILEGE_KRNL);
-	init_idt_desc(INT_VECTOR_IRQ0 + 5,	DA_386IGate, hwint05,			PRIVILEGE_KRNL);
-	init_idt_desc(INT_VECTOR_IRQ0 + 6,	DA_386IGate, hwint06,			PRIVILEGE_KRNL);
-	init_idt_desc(INT_VECTOR_IRQ0 + 7,	DA_386IGate, hwint07,			PRIVILEGE_KRNL);
-	init_idt_desc(INT_VECTOR_IRQ8 + 0,	DA_386IGate, hwint08,			PRIVILEGE_KRNL);
-	init_idt_desc(INT_VECTOR_IRQ8 + 1,	DA_386IGate, hwint09,			PRIVILEGE_KRNL);
-	init_idt_desc(INT_VECTOR_IRQ8 + 2,	DA_386IGate, hwint10,			PRIVILEGE_KRNL);
-	init_idt_desc(INT_VECTOR_IRQ8 + 3,	DA_386IGate, hwint11,			PRIVILEGE_KRNL);
-	init_idt_desc(INT_VECTOR_IRQ8 + 4,	DA_386IGate, hwint12,			PRIVILEGE_KRNL);
-	init_idt_desc(INT_VECTOR_IRQ8 + 5,	DA_386IGate, hwint13,			PRIVILEGE_KRNL);
-	init_idt_desc(INT_VECTOR_IRQ8 + 6,	DA_386IGate, hwint14,			PRIVILEGE_KRNL);
-	init_idt_desc(INT_VECTOR_IRQ8 + 7,	DA_386IGate, hwint15,			PRIVILEGE_KRNL);
-	init_idt_desc(INT_VECTOR_SYS_CALL,	DA_386IGate, sys_call,			PRIVILEGE_USER);
+	/* ÂÖ®ÈÉ®ÂàùÂßãÂåñÊàê‰∏≠Êñ≠Èó®(Ê≤°ÊúâÈô∑Èò±Èó®) */
+	init_idt_desc(INT_VECTOR_DIVIDE,	DA_386IGate,
+		      divide_error,		PRIVILEGE_KRNL);
 
-	/* ÃÓ≥‰ GDT ÷– TSS ’‚∏ˆ√Ë ˆ∑˚ */
+	init_idt_desc(INT_VECTOR_DEBUG,		DA_386IGate,
+		      single_step_exception,	PRIVILEGE_KRNL);
+
+	init_idt_desc(INT_VECTOR_NMI,		DA_386IGate,
+		      nmi,			PRIVILEGE_KRNL);
+
+	init_idt_desc(INT_VECTOR_BREAKPOINT,	DA_386IGate,
+		      breakpoint_exception,	PRIVILEGE_USER);
+
+	init_idt_desc(INT_VECTOR_OVERFLOW,	DA_386IGate,
+		      overflow,			PRIVILEGE_USER);
+
+	init_idt_desc(INT_VECTOR_BOUNDS,	DA_386IGate,
+		      bounds_check,		PRIVILEGE_KRNL);
+
+	init_idt_desc(INT_VECTOR_INVAL_OP,	DA_386IGate,
+		      inval_opcode,		PRIVILEGE_KRNL);
+
+	init_idt_desc(INT_VECTOR_COPROC_NOT,	DA_386IGate,
+		      copr_not_available,	PRIVILEGE_KRNL);
+
+	init_idt_desc(INT_VECTOR_DOUBLE_FAULT,	DA_386IGate,
+		      double_fault,		PRIVILEGE_KRNL);
+
+	init_idt_desc(INT_VECTOR_COPROC_SEG,	DA_386IGate,
+		      copr_seg_overrun,		PRIVILEGE_KRNL);
+
+	init_idt_desc(INT_VECTOR_INVAL_TSS,	DA_386IGate,
+		      inval_tss,		PRIVILEGE_KRNL);
+
+	init_idt_desc(INT_VECTOR_SEG_NOT,	DA_386IGate,
+		      segment_not_present,	PRIVILEGE_KRNL);
+
+	init_idt_desc(INT_VECTOR_STACK_FAULT,	DA_386IGate,
+		      stack_exception,		PRIVILEGE_KRNL);
+
+	init_idt_desc(INT_VECTOR_PROTECTION,	DA_386IGate,
+		      general_protection,	PRIVILEGE_KRNL);
+
+	init_idt_desc(INT_VECTOR_PAGE_FAULT,	DA_386IGate,
+		      page_fault,		PRIVILEGE_KRNL);
+
+	init_idt_desc(INT_VECTOR_COPROC_ERR,	DA_386IGate,
+		      copr_error,		PRIVILEGE_KRNL);
+
+        init_idt_desc(INT_VECTOR_IRQ0 + 0,      DA_386IGate,
+                      hwint00,                  PRIVILEGE_KRNL);
+
+        init_idt_desc(INT_VECTOR_IRQ0 + 1,      DA_386IGate,
+                      hwint01,                  PRIVILEGE_KRNL);
+
+        init_idt_desc(INT_VECTOR_IRQ0 + 2,      DA_386IGate,
+                      hwint02,                  PRIVILEGE_KRNL);
+
+        init_idt_desc(INT_VECTOR_IRQ0 + 3,      DA_386IGate,
+                      hwint03,                  PRIVILEGE_KRNL);
+
+        init_idt_desc(INT_VECTOR_IRQ0 + 4,      DA_386IGate,
+                      hwint04,                  PRIVILEGE_KRNL);
+
+        init_idt_desc(INT_VECTOR_IRQ0 + 5,      DA_386IGate,
+                      hwint05,                  PRIVILEGE_KRNL);
+
+        init_idt_desc(INT_VECTOR_IRQ0 + 6,      DA_386IGate,
+                      hwint06,                  PRIVILEGE_KRNL);
+
+        init_idt_desc(INT_VECTOR_IRQ0 + 7,      DA_386IGate,
+                      hwint07,                  PRIVILEGE_KRNL);
+
+        init_idt_desc(INT_VECTOR_IRQ8 + 0,      DA_386IGate,
+                      hwint08,                  PRIVILEGE_KRNL);
+
+        init_idt_desc(INT_VECTOR_IRQ8 + 1,      DA_386IGate,
+                      hwint09,                  PRIVILEGE_KRNL);
+
+        init_idt_desc(INT_VECTOR_IRQ8 + 2,      DA_386IGate,
+                      hwint10,                  PRIVILEGE_KRNL);
+
+        init_idt_desc(INT_VECTOR_IRQ8 + 3,      DA_386IGate,
+                      hwint11,                  PRIVILEGE_KRNL);
+
+        init_idt_desc(INT_VECTOR_IRQ8 + 4,      DA_386IGate,
+                      hwint12,                  PRIVILEGE_KRNL);
+
+        init_idt_desc(INT_VECTOR_IRQ8 + 5,      DA_386IGate,
+                      hwint13,                  PRIVILEGE_KRNL);
+
+        init_idt_desc(INT_VECTOR_IRQ8 + 6,      DA_386IGate,
+                      hwint14,                  PRIVILEGE_KRNL);
+
+        init_idt_desc(INT_VECTOR_IRQ8 + 7,      DA_386IGate,
+                      hwint15,                  PRIVILEGE_KRNL);
+
+	init_idt_desc(INT_VECTOR_SYS_CALL,	DA_386IGate,
+		      sys_call,			PRIVILEGE_USER);
+
+	/* Fill the TSS descriptor in GDT */
 	memset(&tss, 0, sizeof(tss));
-	tss.ss0		= SELECTOR_KERNEL_DS;
-	init_descriptor(&gdt[INDEX_TSS],
-			vir2phys(seg2phys(SELECTOR_KERNEL_DS), &tss),
-			sizeof(tss) - 1,
-			DA_386TSS);
-	tss.iobase	= sizeof(tss);	/* √ª”–I/O–Ìø…ŒªÕº */
+	tss.ss0	= SELECTOR_KERNEL_DS;
+	init_desc(&gdt[INDEX_TSS],
+		  makelinear(SELECTOR_KERNEL_DS, &tss),
+		  sizeof(tss) - 1,
+		  DA_386TSS);
+	tss.iobase = sizeof(tss); /* No IO permission bitmap */
 
-	/* ÃÓ≥‰ GDT ÷–√ø∏ˆΩ¯≥Ãµƒ LDT µƒ√Ë ˆ∑˚ */
+	/* Fill the LDT descriptors of each proc in GDT  */
 	int i;
-	PROCESS* p_proc	= proc_table;
-	t_16 selector_ldt = INDEX_LDT_FIRST << 3;
-	for(i=0;i<NR_TASKS+NR_PROCS;i++){
-		init_descriptor(&gdt[selector_ldt>>3],
-				vir2phys(seg2phys(SELECTOR_KERNEL_DS), proc_table[i].ldts),
-				LDT_SIZE * sizeof(DESCRIPTOR) - 1,
-				DA_LDT);
-		p_proc++;
-		selector_ldt += 1 << 3;
+	for (i = 0; i < NR_TASKS + NR_PROCS; i++) {
+		memset(&proc_table[i], 0, sizeof(struct proc));
+
+		proc_table[i].ldt_sel = SELECTOR_LDT_FIRST + (i << 3);
+		assert(INDEX_LDT_FIRST + i < GDT_SIZE);
+		init_desc(&gdt[INDEX_LDT_FIRST + i],
+			  makelinear(SELECTOR_KERNEL_DS, proc_table[i].ldts),
+			  LDT_SIZE * sizeof(struct descriptor) - 1,
+			  DA_LDT);
 	}
-
-
 }
 
 
 /*======================================================================*
                              init_idt_desc
  *----------------------------------------------------------------------*
- ≥ı ºªØ 386 ÷–∂œ√≈
+ ÂàùÂßãÂåñ 386 ‰∏≠Êñ≠Èó®
  *======================================================================*/
-PUBLIC void init_idt_desc(unsigned char vector, t_8 desc_type, t_pf_int_handler handler, unsigned char privilege)
+PUBLIC void init_idt_desc(unsigned char vector, u8 desc_type, int_handler handler, unsigned char privilege)
 {
-	GATE *	p_gate	= &idt[vector];
-	t_32	base	= (t_32)handler;
+	struct gate * p_gate	= &idt[vector];
+	u32 base = (u32)handler;
 	p_gate->offset_low	= base & 0xFFFF;
 	p_gate->selector	= SELECTOR_KERNEL_CS;
 	p_gate->dcount		= 0;
@@ -146,11 +210,11 @@ PUBLIC void init_idt_desc(unsigned char vector, t_8 desc_type, t_pf_int_handler 
 /*======================================================================*
                            seg2phys
  *----------------------------------------------------------------------*
- ”…∂Œ√˚«Ûæ¯∂‘µÿ÷∑
+ Áî±ÊÆµÂêçÊ±ÇÁªùÂØπÂú∞ÂùÄ
  *======================================================================*/
-PUBLIC t_32 seg2phys(t_16 seg)
+PUBLIC u32 seg2linear(u16 seg)
 {
-	DESCRIPTOR* p_dest = &gdt[seg >> 3];
+	struct descriptor* p_dest = &gdt[seg >> 3];
 
 	return (p_dest->base_high << 24) | (p_dest->base_mid << 16) | (p_dest->base_low);
 }
@@ -158,31 +222,31 @@ PUBLIC t_32 seg2phys(t_16 seg)
 /*======================================================================*
                            init_descriptor
  *----------------------------------------------------------------------*
- ≥ı ºªØ∂Œ√Ë ˆ∑˚
+ ÂàùÂßãÂåñÊÆµÊèèËø∞Á¨¶
  *======================================================================*/
-PRIVATE void init_descriptor(DESCRIPTOR * p_desc, t_32 base, t_32 limit, t_16 attribute)
+PUBLIC void init_desc(struct descriptor * p_desc, u32 base, u32 limit, u16 attribute)
 {
-	p_desc->limit_low		= limit & 0x0FFFF;		// ∂ŒΩÁœﬁ 1		(2 ◊÷Ω⁄)
-	p_desc->base_low		= base & 0x0FFFF;		// ∂Œª˘÷∑ 1		(2 ◊÷Ω⁄)
-	p_desc->base_mid		= (base >> 16) & 0x0FF;		// ∂Œª˘÷∑ 2		(1 ◊÷Ω⁄)
-	p_desc->attr1			= attribute & 0xFF;		//  Ù–‘ 1
-	p_desc->limit_high_attr2	= ((limit >> 16) & 0x0F) |
-						(attribute >> 8) & 0xF0;// ∂ŒΩÁœﬁ 2 +  Ù–‘ 2
-	p_desc->base_high		= (base >> 24) & 0x0FF;		// ∂Œª˘÷∑ 3		(1 ◊÷Ω⁄)
+	p_desc->limit_low	= limit & 0x0FFFF;		/* ÊÆµÁïåÈôê 1		(2 Â≠óËäÇ) */
+	p_desc->base_low	= base & 0x0FFFF;		/* ÊÆµÂü∫ÂùÄ 1		(2 Â≠óËäÇ) */
+	p_desc->base_mid	= (base >> 16) & 0x0FF;		/* ÊÆµÂü∫ÂùÄ 2		(1 Â≠óËäÇ) */
+	p_desc->attr1		= attribute & 0xFF;		/* Â±ûÊÄß 1 */
+	p_desc->limit_high_attr2= ((limit >> 16) & 0x0F) |
+				  ((attribute >> 8) & 0xF0);	/* ÊÆµÁïåÈôê 2 + Â±ûÊÄß 2 */
+	p_desc->base_high	= (base >> 24) & 0x0FF;		/* ÊÆµÂü∫ÂùÄ 3		(1 Â≠óËäÇ) */
 }
 
 /*======================================================================*
                             exception_handler
  *----------------------------------------------------------------------*
- “Ï≥£¥¶¿Ì
+ ÂºÇÂ∏∏Â§ÑÁêÜ
  *======================================================================*/
 PUBLIC void exception_handler(int vec_no, int err_code, int eip, int cs, int eflags)
 {
 	int i;
-	int text_color = 0x74; /* ª“µ◊∫Ï◊÷ */
+	int text_color = 0x74; /* ÁÅ∞Â∫ïÁ∫¢Â≠ó */
 	char err_description[][64] = {	"#DE Divide Error",
 					"#DB RESERVED",
-					"°™  NMI Interrupt",
+					"‚Äî  NMI Interrupt",
 					"#BP Breakpoint",
 					"#OF Overflow",
 					"#BR BOUND Range Exceeded",
@@ -195,14 +259,14 @@ PUBLIC void exception_handler(int vec_no, int err_code, int eip, int cs, int efl
 					"#SS Stack-Segment Fault",
 					"#GP General Protection",
 					"#PF Page Fault",
-					"°™  (Intel reserved. Do not use.)",
+					"‚Äî  (Intel reserved. Do not use.)",
 					"#MF x87 FPU Floating-Point Error (Math Fault)",
 					"#AC Alignment Check",
 					"#MC Machine Check",
 					"#XF SIMD Floating-Point Exception"
 				};
 
-	/* Õ®π˝¥Ú”°ø’∏Òµƒ∑Ω Ω«Âø’∆¡ƒªµƒ«∞ŒÂ––£¨≤¢∞— disp_pos «Â¡„ */
+	/* ÈÄöËøáÊâìÂç∞Á©∫Ê†ºÁöÑÊñπÂºèÊ∏ÖÁ©∫Â±èÂπïÁöÑÂâç‰∫îË°åÔºåÂπ∂Êää disp_pos Ê∏ÖÈõ∂ */
 	disp_pos = 0;
 	for(i=0;i<80*5;i++){
 		disp_str(" ");
