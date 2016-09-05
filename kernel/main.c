@@ -205,7 +205,7 @@ void untar(const char * filename)
 		int fdout = open(phdr->name, O_CREAT | O_RDWR);
 		if (fdout == -1) {
 			printf("    failed to extract file: %s\n", phdr->name);
-			printf(" aborted]");
+			printf(" aborted]\n");
 			return;
 		}
 		printf("    %s (%d bytes)\n", phdr->name, f_len);
@@ -222,74 +222,6 @@ void untar(const char * filename)
 	close(fd);
 
 	printf(" done]\n");
-}
-
-/*****************************************************************************
- *                                shabby_shell
- *****************************************************************************/
-/**
- * A very very simple shell.
- * 
- * @param tty_name  TTY file name.
- *****************************************************************************/
-void shabby_shell(const char * tty_name)
-{
-	int fd_stdin  = open(tty_name, O_RDWR);
-	assert(fd_stdin  == 0);
-	int fd_stdout = open(tty_name, O_RDWR);
-	assert(fd_stdout == 1);
-
-	char rdbuf[128];
-
-	while (1) {
-		write(1, "$ ", 2);
-		int r = read(0, rdbuf, 70);
-		rdbuf[r] = 0;
-
-		int argc = 0;
-		char * argv[PROC_ORIGIN_STACK];
-		char * p = rdbuf;
-		char * s;
-		int word = 0;
-		char ch;
-		do {
-			ch = *p;
-			if (*p != ' ' && *p != 0 && !word) {
-				s = p;
-				word = 1;
-			}
-			if ((*p == ' ' || *p == 0) && word) {
-				word = 0;
-				argv[argc++] = s;
-				*p = 0;
-			}
-			p++;
-		} while(ch);
-		argv[argc] = 0;
-
-		int fd = open(argv[0], O_RDWR);
-		if (fd == -1) {
-			if (rdbuf[0]) {
-				write(1, "{", 1);
-				write(1, rdbuf, r);
-				write(1, "}\n", 2);
-			}
-		}
-		else {
-			close(fd);
-			int pid = fork();
-			if (pid != 0) { /* parent */
-				int s;
-				wait(&s);
-			}
-			else {	/* child */
-				execv(argv[0], argv);
-			}
-		}
-	}
-
-	close(1);
-	close(0);
 }
 
 /*****************************************************************************
@@ -310,24 +242,17 @@ void Init()
 
 	/* extract `cmd.tar' */
 	untar("/cmd.tar");
-			
 
-	char * tty_list[] = {"/dev_tty1", "/dev_tty2"};
-
-	int i;
-	for (i = 0; i < sizeof(tty_list) / sizeof(tty_list[0]); i++) {
-		int pid = fork();
-		if (pid != 0) { /* parent process */
-			printf("[parent is running, child pid:%d]\n", pid);
-		}
-		else {	/* child process */
-			printf("[child is running, pid:%d]\n", getpid());
-			close(fd_stdin);
-			close(fd_stdout);
-			
-			shabby_shell(tty_list[i]);
-			assert(0);
-		}
+#if 0
+	int pid = fork();
+	if (pid != 0) { /* parent process */
+		printf("parent is running, child pid:%d\n", pid);
+		int s;
+		int child = wait(&s);
+		printf("child (%d) exited with status: %d.\n", child, s);
+	}
+	else {	/* child process */
+		execl("/echo", "echo", "hello", "world", 0);
 	}
 
 	while (1) {
@@ -335,8 +260,9 @@ void Init()
 		int child = wait(&s);
 		printf("child (%d) exited with status: %d.\n", child, s);
 	}
+#endif
+	spin("Init");
 
-	assert(0);
 }
 
 

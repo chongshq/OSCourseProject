@@ -74,9 +74,9 @@ PUBLIC void task_fs()
 		/* case LSEEK: */
 		/* 	fs_msg.OFFSET = do_lseek(); */
 		/* 	break; */
-		case STAT:
-			fs_msg.RETVAL = do_stat();
-			break;
+		/* case STAT: */
+		/* 	fs_msg.RETVAL = do_stat(); */
+		/* 	break; */
 		default:
 			dump_msg("FS::unknown message:", &fs_msg);
 			assert(0);
@@ -107,7 +107,7 @@ PUBLIC void task_fs()
 		case FORK:
 		case EXIT:
 		/* case LSEEK: */
-		case STAT:
+		/* case STAT: */
 			break;
 		case RESUME_PROC:
 			break;
@@ -348,7 +348,7 @@ PRIVATE void mkfs()
 		sprintf(pde->name, "dev_tty%d", i);
 	}
 	(++pde)->inode_nr = NR_CONSOLES + 2;
-	sprintf(pde->name, "cmd.tar", i);
+	strcpy(pde->name, "cmd.tar");
 	WR_SECT(ROOT_DEV, sb.n_1st_sect);
 }
 
